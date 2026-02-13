@@ -48,7 +48,7 @@ public class UserController {
 
         if (user.getBirthday().isAfter(LocalDate.now())) {
             log.error("Ошибка валидации при создании: дата рождения {} в будущем", user.getBirthday());
-            throw new IllegalArgumentException("Дата рождения не может быть в будущем");
+            throw new ValidationException("Дата рождения не может быть в будущем");
         }
 
         user.setId(getNextId());
