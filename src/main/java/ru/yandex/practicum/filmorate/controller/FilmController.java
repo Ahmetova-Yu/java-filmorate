@@ -27,7 +27,7 @@ public class FilmController {
             throw new ValidationException("Имя фильма не должно быть пустым");
         }
 
-        if (film.getDescription() == null || film.getDescription().length() > 200) {
+        if (film.getDescription().length() > 200) {
             log.error("Ошибка валидации при создании: длина описания {} превышает 200 символов",
                     film.getDescription() != null ? film.getDescription().length() : 0);
 
@@ -62,6 +62,11 @@ public class FilmController {
     @PutMapping
     public Film updateFilm(@RequestBody Film newFilm) {
         log.info("Запрос на обновление фильма: {}", newFilm.getId());
+
+        if (newFilm.getId() == null) {
+            log.error("ID фильма не может быть null при обновлении");
+            throw new ValidationException("ID фильма должен быть указан");
+        }
 
         if (!films.containsKey(newFilm.getId())) {
             log.error("Фильм с id {} не найден", newFilm.getId());
