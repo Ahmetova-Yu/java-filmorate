@@ -17,8 +17,33 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FilmService {
 
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private FilmStorage filmStorage;
+    private UserStorage userStorage;
+
+    public Film createFilm(Film film) {
+        return filmStorage.createFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        if (!filmStorage.containsFilm(film.getId())) {
+            log.error("Фильм с id {} не найден", film.getId());
+            throw new ValidationException("Фильм с id " + film.getId() + " не найден");
+        }
+
+        return filmStorage.updateFilm(film);
+    }
+
+    public Collection<Film> findAllFilms() {
+        return filmStorage.findAllFilms();
+    }
+
+    public Film getFilmById(Long id) {
+        return filmStorage.getFilmById(id)
+                .orElseThrow(() -> {
+                    log.error("Фильм с id {} не найден", id);
+                    return new ValidationException("Фильм с id " + id + " не найден");
+                });
+    }
 
     public void addLike(Long filmId, Long userId) {
         log.info("Запрос на добавление лайка: пользователь {} ставит лайк фильму {}", userId, filmId);
