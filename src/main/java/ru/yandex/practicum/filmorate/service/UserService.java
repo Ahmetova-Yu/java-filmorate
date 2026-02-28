@@ -18,9 +18,42 @@ public class UserService {
 
     private final UserStorage userStorage;
 
+    public User createUser(User user) {
+        log.info("Запрос на создание пользователя: {}", user);
+
+        return userStorage.createUser(user);
+    }
+
+    public User updateUser(User user) {
+        log.info("Запрос на обновление пользователя: {}", user.getId());
+
+        if (!userStorage.containsUser(user.getId())) {
+            log.error("Пользователь с id {} не найден", user.getId());
+            throw new ValidationException("Пользователь с id " + user.getId() + " не найден");
+        }
+
+        return userStorage.updateUser(user);
+    }
+
+    public Collection<User> findAllUsers() {
+        Collection<User> users = userStorage.findAllUsers();
+        log.info("Запрос на получение всех пользователей. Всего пользователей: {}", users.size());
+
+        return users;
+    }
+
+    public User getUserById(Long id) {
+        log.info("Запрос на получение пользователя {}", id);
+
+        return userStorage.getUserById(id)
+                .orElseThrow(() -> {
+                    log.error("Пользователь с id {} не найден", id);
+                    throw new ValidationException("Пользователь с id " + id + " не найден");
+                });
+    }
+
     public void addFriend(Long userId, Long friendId) {
-        log.info("Запрос на добавление в друзья: пользователь {} хочет добавить пользователя {}",
-                userId, friendId);
+        log.info("Запрос на добавление в друзья: пользователь {} хочет добавить пользователя {}", userId, friendId);
 
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> {
@@ -46,8 +79,7 @@ public class UserService {
     }
 
     public void removeFriend(Long userId, Long friendId) {
-        log.info("Запрос на удаление из друзей: пользователь {} хочет удалить пользователя {}",
-                userId, friendId);
+        log.info("Запрос на удаление из друзей: пользователь {} хочет удалить пользователя {}", userId, friendId);
 
         User user = userStorage.getUserById(userId)
                 .orElseThrow(() -> {
