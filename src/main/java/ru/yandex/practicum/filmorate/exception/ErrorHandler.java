@@ -30,7 +30,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIllegalArgumentException(final IllegalArgumentException e) {
         log.error("Передан некорректный аргумент: {}", e.getMessage());
-        return Map.of("error", e.getMessage());
+        return Map.of("error", "Передан отрицательный параметр count " + e.getMessage());
     }
 
     @ExceptionHandler
