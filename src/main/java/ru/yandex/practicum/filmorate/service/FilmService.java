@@ -21,10 +21,14 @@ public class FilmService {
     private UserStorage userStorage;
 
     public Film createFilm(Film film) {
+        log.info("Запрос на создание фильма: {}",film);
+
         return filmStorage.createFilm(film);
     }
 
     public Film updateFilm(Film film) {
+        log.info("Запрос на обновление фильма: {}", film.getId());
+
         if (!filmStorage.containsFilm(film.getId())) {
             log.error("Фильм с id {} не найден", film.getId());
             throw new ValidationException("Фильм с id " + film.getId() + " не найден");
@@ -34,10 +38,15 @@ public class FilmService {
     }
 
     public Collection<Film> findAllFilms() {
-        return filmStorage.findAllFilms();
+        Collection<Film> films = filmStorage.findAllFilms();
+        log.info("Запрос на получение всех фильмов. Всего фильмов: {}", films.size());
+
+        return films;
     }
 
     public Film getFilmById(Long id) {
+        log.info("Запрос на получение фильма по id {}", id);
+
         return filmStorage.getFilmById(id)
                 .orElseThrow(() -> {
                     log.error("Фильм с id {} не найден", id);
