@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -24,6 +25,7 @@ public class FilmController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Film createFilm(@RequestBody Film film) {
 
         validate(film, "создании");
@@ -35,6 +37,7 @@ public class FilmController {
     }
 
     @PutMapping
+    @ResponseStatus(HttpStatus.OK)
     public Film updateFilm(@RequestBody Film newFilm) {
         if (newFilm.getId() == null) {
             log.error("ID фильма не может быть null при обновлении");
@@ -51,26 +54,31 @@ public class FilmController {
     }
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
     public Collection<Film> findAllFilms() {
         return filmService.findAllFilms();
     }
 
     @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public Film getFilmById(@PathVariable Long id) {
         return filmService.getFilmById(id);
     }
 
     @PutMapping("/{id}/like/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void addLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.removeLike(id, userId);
     }
 
     @GetMapping("/popular")
+    @ResponseStatus(HttpStatus.OK)
     public Collection<Film> getMostPopularFilms(@RequestParam(defaultValue = "10") Integer count) {
         return filmService.getMostPopularFilms(count);
     }
