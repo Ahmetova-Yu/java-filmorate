@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.constraints.Positive;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -13,6 +15,7 @@ import java.util.Collection;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/films")
 public class FilmController {
 
@@ -79,7 +82,12 @@ public class FilmController {
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> getMostPopularFilms(@RequestParam(defaultValue = "10") Integer count) {
+    public Collection<Film> getMostPopularFilms(@RequestParam(defaultValue = "10")
+                                                    @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
+        if (count == null || count <= 0) {
+            log.error("Некорректное количество: {}", count);
+            throw new ValidationException("Количество фильмов должно быть положительным");
+        }
         return filmService.getMostPopularFilms(count);
     }
 
@@ -89,9 +97,9 @@ public class FilmController {
             throw new ValidationException("Имя фильма не должно быть пустым");
         }
 
-        if (film.getDescription().length() > 200) {
+        if (film.getDescription() != null && film.getDescription().length() > 200) {
             log.error("Ошибка валидации при {}: длина описания {} превышает 200 символов", info,
-                    film.getDescription() != null ? film.getDescription().length() : 0);
+                    film.getDescription().length());
 
             throw new ValidationException("Максимальная длина описания — 200 символов");
         }
@@ -107,7 +115,7 @@ public class FilmController {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
 
-        if (film.getDuration() <= 0) {
+        if (film.getDuration() != null && film.getDuration() <= 0) {
             log.error("Ошибка валидации при {}: продолжительность фильма {} должна быть положительной", info, film.getDuration());
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }
