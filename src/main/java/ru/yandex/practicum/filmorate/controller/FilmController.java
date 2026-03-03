@@ -84,10 +84,6 @@ public class FilmController {
     @ResponseStatus(HttpStatus.OK)
     public Collection<Film> getMostPopularFilms(@RequestParam(defaultValue = "10")
                                                     @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
-        if (count == null || count <= 0) {
-            log.error("Некорректное количество: {}", count);
-            throw new ValidationException("Количество фильмов должно быть положительным");
-        }
         return filmService.getMostPopularFilms(count);
     }
 
