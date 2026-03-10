@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 
 import java.util.Collection;
 import java.util.Set;
@@ -73,8 +74,8 @@ public class UserService {
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        user.getFriends().put(friendId, FriendshipStatus.PENDING);
+        friend.getFriends().put(userId, FriendshipStatus.PENDING);
 
         log.info("Пользователи {} и {} теперь друзья", userId, friendId);
     }
@@ -109,7 +110,7 @@ public class UserService {
                     return new NotFoundException("Пользователь с id " + userId + " не найден");
                 });
 
-        return user.getFriends().stream()
+        return user.getFriends().keySet().stream()
                 .map(friendId -> userStorage.getUserById(friendId)
                         .orElseThrow(() -> {
                             log.error("Друг с id {} не найден в хранилище", friendId);
@@ -133,8 +134,8 @@ public class UserService {
                     return new NotFoundException("Пользователь с id " + otherId + " не найден");
                 });
 
-        Set<Long> commonFriendIds = user.getFriends().stream()
-                .filter(other.getFriends()::contains)
+        Set<Long> commonFriendIds = user.getFriends().keySet().stream()
+                .filter(other.getFriends().keySet()::contains)
                 .collect(Collectors.toSet());
 
         log.info("Найдено {} общих друзей", commonFriendIds.size());
