@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -22,10 +21,13 @@ import java.util.*;
 @Repository
 @Qualifier("filmDbStorage")
 @Primary
-@RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
 
     private final JdbcTemplate jdbcTemplate;
+
+    public FilmDbStorage(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     private final RowMapper<Film> filmRowMapper = (rs, rowNum) -> {
         Film film = new Film();
@@ -173,9 +175,15 @@ public class FilmDbStorage implements FilmStorage {
     private void saveGenres(Long filmId, Set<Genre> genres) {
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 
-        for (Genre genre : genres) {
+        Set<Genre> uniqueGenres = new HashSet<>(genres);
+
+        for (Genre genre : uniqueGenres) {
             if (genre != null) {
-                jdbcTemplate.update(sql, filmId, genre.ordinal() + 1);
+                try {
+                    jdbcTemplate.update(sql, filmId, genre.ordinal() + 1);
+                } catch (Exception e) {
+                    log.error("Ошибка при сохранении жанра {} для фильма {}: {}", genre, filmId, e.getMessage());
+                }
             }
         }
     }

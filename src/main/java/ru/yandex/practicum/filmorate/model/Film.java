@@ -16,4 +16,12 @@ public class Film {
     private Set<Long> likes = new HashSet<>();
     private Set<Genre> genres = new HashSet<>();
     private MpaRating mpaRating;
+
+    public Mpa getMpa() {
+        if (mpaRating == null) return null;
+        Mpa mpa = new Mpa();
+        mpa.setId(mpaRating.ordinal() + 1);
+        mpa.setName(mpaRating.name());
+        return mpa;
+    }
 }

@@ -24,7 +24,6 @@ public class GenreController {
     @GetMapping
     public List<Map<String, Object>> getAllGenres() {
         log.info("Запрос на получение всех жанров");
-
         String sql = "SELECT id, name FROM genres ORDER BY id";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Map<String, Object> genre = new HashMap<>();
@@ -37,7 +36,6 @@ public class GenreController {
     @GetMapping("/{id}")
     public Map<String, Object> getGenreById(@PathVariable int id) {
         log.info("Запрос на получение жанра с id {}", id);
-
         String sql = "SELECT id, name FROM genres WHERE id = ?";
         try {
             return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {

@@ -12,6 +12,9 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -20,7 +23,7 @@ import java.util.Collection;
 public class FilmController {
 
     private final FilmService filmService;
-    LocalDate minReleaseDate = LocalDate.of(1895, 12, 28);
+    private final LocalDate minReleaseDate = LocalDate.of(1895, 12, 28);
 
     @Autowired
     public FilmController(FilmService filmService) {
@@ -29,43 +32,40 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film createFilm(@RequestBody Film film) {
-
+    public Map<String, Object> createFilm(@RequestBody Film film) {
         validate(film, "создании");
-
         Film createdFilm = filmService.createFilm(film);
         log.info("Фильм {} успешно создан", createdFilm.getId());
-
-        return createdFilm;
+        return filmService.getFilmResponse(createdFilm);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public Film updateFilm(@RequestBody Film newFilm) {
+    public Map<String, Object> updateFilm(@RequestBody Film newFilm) {
         if (newFilm.getId() == null) {
             log.error("ID фильма не может быть null при обновлении");
             throw new ValidationException("ID фильма должен быть указан");
         }
 
         validate(newFilm, "обновлении");
-
-       Film updateFilm = filmService.updateFilm(newFilm);
-
+        Film updatedFilm = filmService.updateFilm(newFilm);
         log.info("Фильм с id {} успешно обновлен", newFilm.getId());
-
-        return updateFilm;
+        return filmService.getFilmResponse(updatedFilm);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> findAllFilms() {
-        return filmService.findAllFilms();
+    public List<Map<String, Object>> findAllFilms() {
+        return filmService.findAllFilms().stream()
+                .map(filmService::getFilmResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Film getFilmById(@PathVariable Long id) {
-        return filmService.getFilmById(id);
+    public Map<String, Object> getFilmById(@PathVariable Long id) {
+        Film film = filmService.getFilmById(id);
+        return filmService.getFilmResponse(film);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -82,9 +82,11 @@ public class FilmController {
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<Film> getMostPopularFilms(@RequestParam(defaultValue = "10")
-                                                    @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
-        return filmService.getMostPopularFilms(count);
+    public List<Map<String, Object>> getMostPopularFilms(@RequestParam(defaultValue = "10")
+                                                         @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
+        return filmService.getMostPopularFilms(count).stream()
+                .map(filmService::getFilmResponse)
+                .collect(Collectors.toList());
     }
 
     private void validate(Film film, String info) {
@@ -96,7 +98,6 @@ public class FilmController {
         if (film.getDescription() != null && film.getDescription().length() > 200) {
             log.error("Ошибка валидации при {}: длина описания {} превышает 200 символов", info,
                     film.getDescription().length());
-
             throw new ValidationException("Максимальная длина описания — 200 символов");
         }
 
@@ -111,7 +112,12 @@ public class FilmController {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
 
-        if (film.getDuration() != null && film.getDuration() <= 0) {
+        if (film.getDuration() == null) {
+            log.error("Ошибка валидации при {}: продолжительность фильма не указана", info);
+            throw new ValidationException("Продолжительность фильма должна быть указана");
+        }
+
+        if (film.getDuration() <= 0) {
             log.error("Ошибка валидации при {}: продолжительность фильма {} должна быть положительной", info, film.getDuration());
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }

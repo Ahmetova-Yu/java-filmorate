@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,9 +72,9 @@ class FilmControllerTest {
     void createFilm_ShouldCreateFilm_WhenDescriptionIsExactly200Chars() {
         validFilm.setDescription("a".repeat(200));
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertEquals(200, createdFilm.getDescription().length());
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.get("id"));
+        assertEquals(200, validFilm.getDescription().length());
     }
 
     @Test
@@ -98,18 +99,18 @@ class FilmControllerTest {
     void createFilm_ShouldAllowReleaseDateExactly1895_12_28() {
         validFilm.setReleaseDate(LocalDate.of(1895, 12, 28));
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertEquals(LocalDate.of(1895, 12, 28), createdFilm.getReleaseDate());
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.get("id"));
+        assertEquals(LocalDate.of(1895, 12, 28), validFilm.getReleaseDate());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenDurationIsNull() {
         validFilm.setDuration(null);
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertNull(createdFilm.getDuration());
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> filmController.createFilm(validFilm));
+        assertEquals("Продолжительность фильма должна быть указана", exception.getMessage());
     }
 
     @Test
@@ -134,46 +135,54 @@ class FilmControllerTest {
     void createFilm_ShouldCreateFilm_WhenMpaRatingIsNull() {
         validFilm.setMpaRating(null);
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertNull(createdFilm.getMpaRating());
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.get("id"));
+        assertNull(createdFilm.get("mpa"));
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenGenresIsNull() {
         validFilm.setGenres(null);
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertNull(createdFilm.getGenres());
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.get("id"));
+        assertEquals(0, ((java.util.List<?>) createdFilm.get("genres")).size());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenGenresIsEmpty() {
         validFilm.setGenres(Set.of());
 
-        Film createdFilm = filmController.createFilm(validFilm);
-        assertNotNull(createdFilm.getId());
-        assertTrue(createdFilm.getGenres().isEmpty());
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.get("id"));
+        assertEquals(0, ((java.util.List<?>) createdFilm.get("genres")).size());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenAllFieldsAreValid() {
-        Film createdFilm = filmController.createFilm(validFilm);
+        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
 
-        assertNotNull(createdFilm.getId());
-        assertEquals(1, createdFilm.getId());
-        assertEquals(validFilm.getName(), createdFilm.getName());
-        assertEquals(validFilm.getDescription(), createdFilm.getDescription());
-        assertEquals(validFilm.getReleaseDate(), createdFilm.getReleaseDate());
-        assertEquals(validFilm.getDuration(), createdFilm.getDuration());
-        assertEquals(validFilm.getMpaRating(), createdFilm.getMpaRating());
-        assertEquals(validFilm.getGenres(), createdFilm.getGenres());
+        assertNotNull(createdFilm.get("id"));
+        assertEquals(1L, createdFilm.get("id"));
+        assertEquals(validFilm.getName(), createdFilm.get("name"));
+        assertEquals(validFilm.getDescription(), createdFilm.get("description"));
+        assertEquals(validFilm.getReleaseDate().toString(), createdFilm.get("releaseDate").toString());
+        assertEquals(validFilm.getDuration(), createdFilm.get("duration"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mpa = (Map<String, Object>) createdFilm.get("mpa");
+        assertNotNull(mpa);
+        assertEquals(3, mpa.get("id")); // PG_13 ordinal + 1 = 3
+        assertEquals("PG_13", mpa.get("name"));
+
+        @SuppressWarnings("unchecked")
+        java.util.List<Map<String, Integer>> genres = (java.util.List<Map<String, Integer>>) createdFilm.get("genres");
+        assertEquals(2, genres.size());
     }
 
     @Test
     void createFilm_ShouldGenerateNewId_ForMultipleFilms() {
-        Film firstFilm = filmController.createFilm(validFilm);
+        Map<String, Object> firstFilm = filmController.createFilm(validFilm);
 
         Film secondFilm = new Film();
         secondFilm.setName("Второй фильм");
@@ -182,9 +191,9 @@ class FilmControllerTest {
         secondFilm.setDuration(90);
         secondFilm.setMpaRating(MpaRating.R);
 
-        Film createdSecond = filmController.createFilm(secondFilm);
+        Map<String, Object> createdSecond = filmController.createFilm(secondFilm);
 
-        assertEquals(1L, firstFilm.getId());
-        assertEquals(2L, createdSecond.getId());
+        assertEquals(1L, firstFilm.get("id"));
+        assertEquals(2L, createdSecond.get("id"));
     }
 }
