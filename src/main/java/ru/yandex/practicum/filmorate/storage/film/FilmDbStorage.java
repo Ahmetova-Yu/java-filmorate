@@ -73,7 +73,6 @@ public class FilmDbStorage implements FilmStorage {
             saveGenres(film.getId(), film.getGenres());
         }
 
-        log.debug("Фильм сохранен в БД: id={}", film.getId());
         return film;
     }
 
@@ -97,7 +96,6 @@ public class FilmDbStorage implements FilmStorage {
             saveGenres(film.getId(), film.getGenres());
         }
 
-        log.debug("Фильм обновлен в БД: id={}", film.getId());
         return film;
     }
 

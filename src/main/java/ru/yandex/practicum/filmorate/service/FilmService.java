@@ -5,12 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.*;
+import java.util.Collection;
 
 @Slf4j
 @Service
@@ -38,37 +37,6 @@ public class FilmService {
     public Film getFilmById(Long id) {
         return filmStorage.getFilmById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден"));
-    }
-
-    public Map<String, Object> getFilmResponse(Film film) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", film.getId());
-        response.put("name", film.getName());
-        response.put("description", film.getDescription());
-        response.put("releaseDate", film.getReleaseDate());
-        response.put("duration", film.getDuration());
-        response.put("likes", film.getLikes() != null ? film.getLikes() : new HashSet<>());
-
-        List<Map<String, Integer>> genres = new ArrayList<>();
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                Map<String, Integer> genreMap = new HashMap<>();
-                genreMap.put("id", genre.ordinal() + 1);
-                genres.add(genreMap);
-            }
-        }
-        response.put("genres", genres);
-
-        if (film.getMpaRating() != null) {
-            Map<String, Object> mpa = new HashMap<>();
-            mpa.put("id", film.getMpaRating().ordinal() + 1);
-            mpa.put("name", film.getMpaRating().name());
-            response.put("mpa", mpa);
-        } else {
-            response.put("mpa", null);
-        }
-
-        return response;
     }
 
     public void addLike(Long filmId, Long userId) {
@@ -99,6 +67,9 @@ public class FilmService {
         if (filmStorage instanceof FilmDbStorage) {
             return ((FilmDbStorage) filmStorage).getMostPopularFilms(limit);
         }
-        return new ArrayList<>();
+        return filmStorage.findAllFilms().stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(limit)
+                .toList();
     }
 }

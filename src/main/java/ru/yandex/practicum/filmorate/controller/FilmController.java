@@ -8,11 +8,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,32 +32,34 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> createFilm(@RequestBody Film film) {
+    public Map<String, Object> createFilm(@RequestBody Map<String, Object> filmData) {
+        Film film = convertToFilm(filmData);
         validate(film, "создании");
         Film createdFilm = filmService.createFilm(film);
         log.info("Фильм {} успешно создан", createdFilm.getId());
-        return filmService.getFilmResponse(createdFilm);
+        return convertToResponse(createdFilm);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Object> updateFilm(@RequestBody Film newFilm) {
-        if (newFilm.getId() == null) {
+    public Map<String, Object> updateFilm(@RequestBody Map<String, Object> filmData) {
+        if (!filmData.containsKey("id") || filmData.get("id") == null) {
             log.error("ID фильма не может быть null при обновлении");
             throw new ValidationException("ID фильма должен быть указан");
         }
 
-        validate(newFilm, "обновлении");
-        Film updatedFilm = filmService.updateFilm(newFilm);
-        log.info("Фильм с id {} успешно обновлен", newFilm.getId());
-        return filmService.getFilmResponse(updatedFilm);
+        Film film = convertToFilm(filmData);
+        validate(film, "обновлении");
+        Film updatedFilm = filmService.updateFilm(film);
+        log.info("Фильм с id {} успешно обновлен", film.getId());
+        return convertToResponse(updatedFilm);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Map<String, Object>> findAllFilms() {
         return filmService.findAllFilms().stream()
-                .map(filmService::getFilmResponse)
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +67,7 @@ public class FilmController {
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> getFilmById(@PathVariable Long id) {
         Film film = filmService.getFilmById(id);
-        return filmService.getFilmResponse(film);
+        return convertToResponse(film);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -84,8 +87,77 @@ public class FilmController {
     public List<Map<String, Object>> getMostPopularFilms(@RequestParam(defaultValue = "10")
                                                          @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
         return filmService.getMostPopularFilms(count).stream()
-                .map(filmService::getFilmResponse)
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    private Film convertToFilm(Map<String, Object> filmData) {
+        Film film = new Film();
+
+        if (filmData.containsKey("id")) {
+            film.setId(Long.valueOf(filmData.get("id").toString()));
+        }
+
+        film.setName((String) filmData.get("name"));
+        film.setDescription((String) filmData.get("description"));
+        film.setReleaseDate(LocalDate.parse((String) filmData.get("releaseDate")));
+        film.setDuration((Integer) filmData.get("duration"));
+
+        // Обработка mpa
+        if (filmData.containsKey("mpa") && filmData.get("mpa") != null) {
+            Map<String, Object> mpaData = (Map<String, Object>) filmData.get("mpa");
+            int mpaId = ((Integer) mpaData.get("id"));
+            film.setMpaRating(MpaRating.values()[mpaId - 1]);
+        }
+
+        // Обработка жанров
+        if (filmData.containsKey("genres") && filmData.get("genres") != null) {
+            List<Map<String, Integer>> genresData = (List<Map<String, Integer>>) filmData.get("genres");
+            Set<Genre> genres = new HashSet<>();
+            for (Map<String, Integer> genreData : genresData) {
+                int genreId = genreData.get("id");
+                genres.add(Genre.values()[genreId - 1]);
+            }
+            film.setGenres(genres);
+        }
+
+        return film;
+    }
+
+    private Map<String, Object> convertToResponse(Film film) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", film.getId());
+        response.put("name", film.getName());
+        response.put("description", film.getDescription());
+        response.put("releaseDate", film.getReleaseDate().toString());
+        response.put("duration", film.getDuration());
+        response.put("likes", new ArrayList<>(film.getLikes()));
+
+        // Добавляем mpa объект
+        if (film.getMpaRating() != null) {
+            Map<String, Object> mpa = new HashMap<>();
+            mpa.put("id", film.getMpaRating().ordinal() + 1);
+            mpa.put("name", film.getMpaRating().name());
+            response.put("mpa", mpa);
+        } else {
+            response.put("mpa", null);
+        }
+
+        // Добавляем жанры
+        List<Map<String, Object>> genres = new ArrayList<>();
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                Map<String, Object> genreMap = new HashMap<>();
+                genreMap.put("id", genre.ordinal() + 1);
+                genreMap.put("name", genre.getName());
+                genres.add(genreMap);
+            }
+        }
+        // Сортируем жанры по id
+        genres.sort(Comparator.comparingInt(g -> (int) g.get("id")));
+        response.put("genres", genres);
+
+        return response;
     }
 
     private void validate(Film film, String info) {
