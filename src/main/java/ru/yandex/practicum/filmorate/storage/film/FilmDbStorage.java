@@ -180,10 +180,14 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void saveGenres(Long filmId, Set<Genre> genres) {
+        if (genres == null || genres.isEmpty()) {
+            return;
+        }
+
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 
         for (Genre genre : genres) {
-            if (genre != null) {
+            if (genre != null && genre.getId() >= 1 && genre.getId() <= 6) {
                 try {
                     jdbcTemplate.update(sql, filmId, genre.getId());
                 } catch (Exception e) {
