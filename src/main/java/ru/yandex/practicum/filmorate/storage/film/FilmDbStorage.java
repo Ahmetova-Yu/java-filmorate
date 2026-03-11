@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -19,6 +20,7 @@ import java.util.*;
 
 @Slf4j
 @Repository
+@Qualifier("filmDbStorage")
 @Primary
 @RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
