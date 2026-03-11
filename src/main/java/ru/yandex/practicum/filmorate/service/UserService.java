@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.Collection;
@@ -16,20 +17,24 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserDbStorage userStorage;
+    private final UserStorage userStorage;
 
     public User createUser(User user) {
-        log.info("Запрос на создание пользователя");
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
         return userStorage.createUser(user);
     }
 
     public User updateUser(User user) {
-        log.info("Запрос на обновление пользователя: {}", user.getId());
-
         if (!userStorage.containsUser(user.getId())) {
             throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");
         }
-
+        if (user.getName() == null || user.getName().isBlank()) {
+            User existingUser = userStorage.getUserById(user.getId())
+                    .orElseThrow(() -> new NotFoundException("Пользователь с id " + user.getId() + " не найден"));
+            user.setName(existingUser.getLogin());
+        }
         return userStorage.updateUser(user);
     }
 
@@ -43,8 +48,6 @@ public class UserService {
     }
 
     public void addFriend(Long userId, Long friendId) {
-        log.info("Запрос на добавление в друзья: {} -> {}", userId, friendId);
-
         getUserById(userId);
         getUserById(friendId);
 
@@ -52,40 +55,60 @@ public class UserService {
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
 
-        userStorage.addFriend(userId, friendId);
+        if (userStorage instanceof UserDbStorage) {
+            ((UserDbStorage) userStorage).addFriend(userId, friendId);
+        } else {
+            User user = getUserById(userId);
+            user.getFriends().put(friendId, null);
+        }
     }
 
     public void removeFriend(Long userId, Long friendId) {
-        log.info("Запрос на удаление из друзей: {} -> {}", userId, friendId);
-
         getUserById(userId);
         getUserById(friendId);
 
-        userStorage.removeFriend(userId, friendId);
+        if (userStorage instanceof UserDbStorage) {
+            ((UserDbStorage) userStorage).removeFriend(userId, friendId);
+        } else {
+            User user = getUserById(userId);
+            user.getFriends().remove(friendId);
+        }
     }
 
     public Collection<User> getUserFriends(Long userId) {
-        log.info("Запрос на получение друзей пользователя {}", userId);
-
         getUserById(userId);
 
-        return userStorage.getFriendIds(userId).stream()
-                .map(this::getUserById)
-                .collect(Collectors.toList());
+        if (userStorage instanceof UserDbStorage) {
+            return ((UserDbStorage) userStorage).getFriendIds(userId).stream()
+                    .map(this::getUserById)
+                    .collect(Collectors.toList());
+        } else {
+            return getUserById(userId).getFriends().keySet().stream()
+                    .map(this::getUserById)
+                    .collect(Collectors.toList());
+        }
     }
 
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
-        log.info("Запрос на получение общих друзей пользователей {} и {}", userId, otherId);
-
         getUserById(userId);
         getUserById(otherId);
 
-        var userFriends = userStorage.getFriendIds(userId);
-        var otherFriends = userStorage.getFriendIds(otherId);
+        if (userStorage instanceof UserDbStorage) {
+            var userFriends = ((UserDbStorage) userStorage).getFriendIds(userId);
+            var otherFriends = ((UserDbStorage) userStorage).getFriendIds(otherId);
 
-        return userFriends.stream()
-                .filter(otherFriends::contains)
-                .map(this::getUserById)
-                .collect(Collectors.toList());
+            return userFriends.stream()
+                    .filter(otherFriends::contains)
+                    .map(this::getUserById)
+                    .collect(Collectors.toList());
+        } else {
+            var userFriends = getUserById(userId).getFriends().keySet();
+            var otherFriends = getUserById(otherId).getFriends().keySet();
+
+            return userFriends.stream()
+                    .filter(otherFriends::contains)
+                    .map(this::getUserById)
+                    .collect(Collectors.toList());
+        }
     }
 }

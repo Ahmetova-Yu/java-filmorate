@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 
@@ -16,8 +16,8 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class FilmService {
 
-    private final FilmDbStorage filmStorage;
-    private final UserDbStorage userStorage;
+    private final FilmStorage filmStorage;
+    private final UserStorage userStorage;
 
     public Film createFilm(Film film) {
         log.info("Запрос на создание фильма");
@@ -50,7 +50,9 @@ public class FilmService {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
-        filmStorage.addLike(filmId, userId);
+        if (filmStorage instanceof FilmDbStorage) {
+            ((FilmDbStorage) filmStorage).addLike(filmId, userId);
+        }
     }
 
     public void removeLike(Long filmId, Long userId) {
@@ -60,13 +62,22 @@ public class FilmService {
         userStorage.getUserById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
 
-        filmStorage.removeLike(filmId, userId);
+        if (filmStorage instanceof FilmDbStorage) {
+            ((FilmDbStorage) filmStorage).removeLike(filmId, userId);
+        }
     }
 
     public Collection<Film> getMostPopularFilms(Integer count) {
         int limit = count != null ? count : 10;
         log.info("Запрос на получение {} самых популярных фильмов", limit);
 
-        return filmStorage.getMostPopularFilms(limit);
+        if (filmStorage instanceof FilmDbStorage) {
+            return ((FilmDbStorage) filmStorage).getMostPopularFilms(limit);
+        }
+
+        return filmStorage.findAllFilms().stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(limit)
+                .toList();
     }
 }
