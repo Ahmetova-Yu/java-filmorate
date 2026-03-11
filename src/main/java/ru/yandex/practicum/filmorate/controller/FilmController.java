@@ -9,12 +9,10 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -32,42 +30,38 @@ public class FilmController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, Object> createFilm(@RequestBody Map<String, Object> filmData) {
-        Film film = convertToFilm(filmData);
+    public Film createFilm(@RequestBody Film film) {
         validate(film, "создании");
         Film createdFilm = filmService.createFilm(film);
         log.info("Фильм {} успешно создан", createdFilm.getId());
-        return convertToResponse(createdFilm);
+        return enrichFilmWithDetails(createdFilm);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Object> updateFilm(@RequestBody Map<String, Object> filmData) {
-        if (!filmData.containsKey("id") || filmData.get("id") == null) {
+    public Film updateFilm(@RequestBody Film film) {
+        if (film.getId() == null) {
             log.error("ID фильма не может быть null при обновлении");
             throw new ValidationException("ID фильма должен быть указан");
         }
-
-        Film film = convertToFilm(filmData);
         validate(film, "обновлении");
         Film updatedFilm = filmService.updateFilm(film);
         log.info("Фильм с id {} успешно обновлен", film.getId());
-        return convertToResponse(updatedFilm);
+        return enrichFilmWithDetails(updatedFilm);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<Map<String, Object>> findAllFilms() {
+    public List<Film> findAllFilms() {
         return filmService.findAllFilms().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .map(this::enrichFilmWithDetails)
+                .toList();
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Object> getFilmById(@PathVariable Long id) {
-        Film film = filmService.getFilmById(id);
-        return convertToResponse(film);
+    public Film getFilmById(@PathVariable Long id) {
+        return enrichFilmWithDetails(filmService.getFilmById(id));
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -84,119 +78,20 @@ public class FilmController {
 
     @GetMapping("/popular")
     @ResponseStatus(HttpStatus.OK)
-    public List<Map<String, Object>> getMostPopularFilms(@RequestParam(defaultValue = "10")
-                                                         @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
+    public List<Film> getMostPopularFilms(@RequestParam(defaultValue = "10")
+                                          @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
         return filmService.getMostPopularFilms(count).stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+                .map(this::enrichFilmWithDetails)
+                .toList();
     }
 
-    private Film convertToFilm(Map<String, Object> filmData) {
-        Film film = new Film();
-
-        if (filmData.containsKey("id") && filmData.get("id") != null) {
-            film.setId(Long.valueOf(filmData.get("id").toString()));
+    private Film enrichFilmWithDetails(Film film) {
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            List<Genre> sortedGenres = new ArrayList<>(film.getGenres());
+            sortedGenres.sort(Comparator.comparingInt(Genre::getId));
+            film.setGenres(new LinkedHashSet<>(sortedGenres));
         }
-
-        if (filmData.containsKey("name") && filmData.get("name") != null) {
-            film.setName((String) filmData.get("name"));
-        }
-
-        if (filmData.containsKey("description") && filmData.get("description") != null) {
-            film.setDescription((String) filmData.get("description"));
-        }
-
-        if (filmData.containsKey("releaseDate") && filmData.get("releaseDate") != null) {
-            film.setReleaseDate(LocalDate.parse((String) filmData.get("releaseDate")));
-        }
-
-        if (filmData.containsKey("duration") && filmData.get("duration") != null) {
-            film.setDuration((Integer) filmData.get("duration"));
-        }
-
-        if (filmData.containsKey("mpa") && filmData.get("mpa") != null) {
-            Map<String, Object> mpaData = (Map<String, Object>) filmData.get("mpa");
-            if (mpaData.containsKey("id") && mpaData.get("id") != null) {
-                int mpaId = ((Integer) mpaData.get("id"));
-                Mpa mpa = new Mpa();
-                mpa.setId(mpaId);
-                mpa.setName(getMpaNameById(mpaId));
-                film.setMpa(mpa);
-            }
-        }
-
-        if (filmData.containsKey("genres") && filmData.get("genres") != null) {
-            List<Map<String, Integer>> genresData = (List<Map<String, Integer>>) filmData.get("genres");
-            Set<Genre> genres = new HashSet<>();
-            for (Map<String, Integer> genreData : genresData) {
-                if (genreData.containsKey("id") && genreData.get("id") != null) {
-                    int genreId = genreData.get("id");
-                    Genre genre = new Genre();
-                    genre.setId(genreId);
-                    genre.setName(getGenreNameById(genreId));
-                    genres.add(genre);
-                }
-            }
-            film.setGenres(genres);
-        }
-
         return film;
-    }
-
-    private Map<String, Object> convertToResponse(Film film) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", film.getId());
-        response.put("name", film.getName());
-        response.put("description", film.getDescription());
-        response.put("releaseDate", film.getReleaseDate().toString());
-        response.put("duration", film.getDuration());
-        response.put("likes", new ArrayList<>(film.getLikes()));
-
-        if (film.getMpa() != null) {
-            Map<String, Object> mpa = new HashMap<>();
-            mpa.put("id", film.getMpa().getId());
-            mpa.put("name", film.getMpa().getName());
-            response.put("mpa", mpa);
-        } else {
-            response.put("mpa", null);
-        }
-
-        List<Map<String, Object>> genres = new ArrayList<>();
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                Map<String, Object> genreMap = new HashMap<>();
-                genreMap.put("id", genre.getId());
-                genreMap.put("name", genre.getName());
-                genres.add(genreMap);
-            }
-        }
-        genres.sort(Comparator.comparingInt(g -> (int) g.get("id")));
-        response.put("genres", genres);
-
-        return response;
-    }
-
-    private String getMpaNameById(int id) {
-        switch (id) {
-            case 1: return "G";
-            case 2: return "PG";
-            case 3: return "PG-13";
-            case 4: return "R";
-            case 5: return "NC-17";
-            default: return "G";
-        }
-    }
-
-    private String getGenreNameById(int id) {
-        switch (id) {
-            case 1: return "Комедия";
-            case 2: return "Драма";
-            case 3: return "Мультфильм";
-            case 4: return "Триллер";
-            case 5: return "Документальный";
-            case 6: return "Боевик";
-            default: return "Комедия";
-        }
     }
 
     private void validate(Film film, String info) {
@@ -204,29 +99,22 @@ public class FilmController {
             log.error("Ошибка валидации при {}: название фильма не должно быть пустым", info);
             throw new ValidationException("Имя фильма не должно быть пустым");
         }
-
         if (film.getDescription() != null && film.getDescription().length() > 200) {
-            log.error("Ошибка валидации при {}: длина описания {} превышает 200 символов", info,
-                    film.getDescription().length());
+            log.error("Ошибка валидации при {}: длина описания {} превышает 200 символов", info, film.getDescription().length());
             throw new ValidationException("Максимальная длина описания — 200 символов");
         }
-
         if (film.getReleaseDate() == null) {
             log.error("Ошибка валидации при {}: дата релиза не указана", info);
             throw new ValidationException("Дата релиза должна быть указана");
         }
-
         if (film.getReleaseDate().isBefore(minReleaseDate)) {
-            log.error("Ошибка валидации при {}: дата релиза {} раньше минимальной {}", info,
-                    film.getReleaseDate(), minReleaseDate);
+            log.error("Ошибка валидации при {}: дата релиза {} раньше минимальной {}", info, film.getReleaseDate(), minReleaseDate);
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
-
         if (film.getDuration() == null) {
             log.error("Ошибка валидации при {}: продолжительность фильма не указана", info);
             throw new ValidationException("Продолжительность фильма должна быть указана");
         }
-
         if (film.getDuration() <= 0) {
             log.error("Ошибка валидации при {}: продолжительность фильма {} должна быть положительной", info, film.getDuration());
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");

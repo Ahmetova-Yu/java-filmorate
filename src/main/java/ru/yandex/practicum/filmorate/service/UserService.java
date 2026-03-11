@@ -10,8 +10,8 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -51,11 +51,9 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         getUserById(userId);
         getUserById(friendId);
-
         if (userId.equals(friendId)) {
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
-
         if (userStorage instanceof UserDbStorage) {
             ((UserDbStorage) userStorage).addFriend(userId, friendId);
         }
@@ -64,7 +62,6 @@ public class UserService {
     public void removeFriend(Long userId, Long friendId) {
         getUserById(userId);
         getUserById(friendId);
-
         if (userStorage instanceof UserDbStorage) {
             ((UserDbStorage) userStorage).removeFriend(userId, friendId);
         }
@@ -72,7 +69,6 @@ public class UserService {
 
     public Collection<User> getUserFriends(Long userId) {
         getUserById(userId);
-
         if (userStorage instanceof UserDbStorage) {
             return ((UserDbStorage) userStorage).getFriendIds(userId).stream()
                     .map(this::getUserById)
@@ -84,11 +80,9 @@ public class UserService {
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
         getUserById(userId);
         getUserById(otherId);
-
         if (userStorage instanceof UserDbStorage) {
             var userFriends = ((UserDbStorage) userStorage).getFriendIds(userId);
             var otherFriends = ((UserDbStorage) userStorage).getFriendIds(otherId);
-
             return userFriends.stream()
                     .filter(otherFriends::contains)
                     .map(this::getUserById)

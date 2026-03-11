@@ -44,7 +44,6 @@ public class FilmService {
         if (!userStorage.containsUser(userId)) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
-
         if (filmStorage instanceof FilmDbStorage) {
             ((FilmDbStorage) filmStorage).addLike(filmId, userId);
         }
@@ -55,7 +54,6 @@ public class FilmService {
         if (!userStorage.containsUser(userId)) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден");
         }
-
         if (filmStorage instanceof FilmDbStorage) {
             ((FilmDbStorage) filmStorage).removeLike(filmId, userId);
         }
@@ -63,7 +61,6 @@ public class FilmService {
 
     public Collection<Film> getMostPopularFilms(Integer count) {
         int limit = count != null ? count : 10;
-
         if (filmStorage instanceof FilmDbStorage) {
             return ((FilmDbStorage) filmStorage).getMostPopularFilms(limit);
         }

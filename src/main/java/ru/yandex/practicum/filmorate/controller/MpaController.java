@@ -12,29 +12,38 @@ import java.util.*;
 @RequestMapping("/mpa")
 public class MpaController {
 
+    private final Map<Integer, String> mpaMap = new LinkedHashMap<>();
+
+    public MpaController() {
+        mpaMap.put(1, "G");
+        mpaMap.put(2, "PG");
+        mpaMap.put(3, "PG-13");
+        mpaMap.put(4, "R");
+        mpaMap.put(5, "NC-17");
+    }
+
     @GetMapping
     public List<Mpa> getAllMpa() {
         log.info("Запрос на получение всех рейтингов MPA");
-        return Arrays.asList(
-                new Mpa(1, "G"),
-                new Mpa(2, "PG"),
-                new Mpa(3, "PG-13"),
-                new Mpa(4, "R"),
-                new Mpa(5, "NC-17")
-        );
+        List<Mpa> ratings = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : mpaMap.entrySet()) {
+            Mpa mpa = new Mpa();
+            mpa.setId(entry.getKey());
+            mpa.setName(entry.getValue());
+            ratings.add(mpa);
+        }
+        return ratings;
     }
 
     @GetMapping("/{id}")
     public Mpa getMpaById(@PathVariable int id) {
         log.info("Запрос на получение рейтинга MPA с id {}", id);
-
-        switch (id) {
-            case 1: return new Mpa(1, "G");
-            case 2: return new Mpa(2, "PG");
-            case 3: return new Mpa(3, "PG-13");
-            case 4: return new Mpa(4, "R");
-            case 5: return new Mpa(5, "NC-17");
-            default: throw new NotFoundException("Рейтинг mpa с id " + id + " не найден");
+        if (!mpaMap.containsKey(id)) {
+            throw new NotFoundException("Рейтинг mpa с id " + id + " не найден");
         }
+        Mpa mpa = new Mpa();
+        mpa.setId(id);
+        mpa.setName(mpaMap.get(id));
+        return mpa;
     }
 }

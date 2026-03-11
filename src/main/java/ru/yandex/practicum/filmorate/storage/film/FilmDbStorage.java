@@ -9,8 +9,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.GenreEnum;
-import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -38,7 +38,10 @@ public class FilmDbStorage implements FilmStorage {
         film.setDuration(rs.getInt("duration"));
 
         int mpaId = rs.getInt("mpa_rating_id");
-        film.setMpaRating(MpaRating.values()[mpaId - 1]);
+        Mpa mpa = new Mpa();
+        mpa.setId(mpaId);
+        mpa.setName(getMpaName(mpaId));
+        film.setMpa(mpa);
 
         film.setLikes(getLikes(film.getId()));
         film.setGenres(getGenres(film.getId()));
@@ -59,7 +62,7 @@ public class FilmDbStorage implements FilmStorage {
             ps.setDate(3, Date.valueOf(film.getReleaseDate()));
             ps.setInt(4, film.getDuration());
 
-            int mpaId = film.getMpaRating() != null ? film.getMpaRating().ordinal() + 1 : 1;
+            int mpaId = film.getMpa() != null ? film.getMpa().getId() : 1;
             ps.setInt(5, mpaId);
             return ps;
         }, keyHolder);
@@ -80,7 +83,7 @@ public class FilmDbStorage implements FilmStorage {
     public Film updateFilm(Film film) {
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_rating_id = ? WHERE id = ?";
 
-        int mpaId = film.getMpaRating() != null ? film.getMpaRating().ordinal() + 1 : 1;
+        int mpaId = film.getMpa() != null ? film.getMpa().getId() : 1;
 
         jdbcTemplate.update(sql,
                 film.getName(),
@@ -153,32 +156,36 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(sql, filmRowMapper, count);
     }
 
+    private String getMpaName(int id) {
+        String sql = "SELECT name FROM mpa_ratings WHERE id = ?";
+        return jdbcTemplate.queryForObject(sql, String.class, id);
+    }
+
     private Set<Long> getLikes(Long filmId) {
         String sql = "SELECT user_id FROM likes WHERE film_id = ?";
         return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, filmId));
     }
 
-    private Set<GenreEnum> getGenres(Long filmId) {
-        String sql = "SELECT genre_id FROM film_genres WHERE film_id = ? ORDER BY genre_id";
-        Set<GenreEnum> genres = new LinkedHashSet<>();
+    private Set<Genre> getGenres(Long filmId) {
+        String sql = "SELECT g.id, g.name FROM genres g " +
+                "JOIN film_genres fg ON g.id = fg.genre_id " +
+                "WHERE fg.film_id = ? ORDER BY g.id";
 
-        List<Integer> genreIds = jdbcTemplate.queryForList(sql, Integer.class, filmId);
-        for (Integer genreId : genreIds) {
-            genres.add(GenreEnum.values()[genreId - 1]);
-        }
-
-        return genres;
+        return new LinkedHashSet<>(jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Genre genre = new Genre();
+            genre.setId(rs.getInt("id"));
+            genre.setName(rs.getString("name"));
+            return genre;
+        }, filmId));
     }
 
-    private void saveGenres(Long filmId, Set<GenreEnum> genres) {
+    private void saveGenres(Long filmId, Set<Genre> genres) {
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 
-        Set<GenreEnum> uniqueGenres = new HashSet<>(genres);
-
-        for (GenreEnum genre : uniqueGenres) {
+        for (Genre genre : genres) {
             if (genre != null) {
                 try {
-                    jdbcTemplate.update(sql, filmId, genre.ordinal() + 1);
+                    jdbcTemplate.update(sql, filmId, genre.getId());
                 } catch (Exception e) {
                     log.error("Ошибка при сохранении жанра {} для фильма {}: {}", genre, filmId, e.getMessage());
                 }
