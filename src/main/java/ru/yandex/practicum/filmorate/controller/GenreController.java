@@ -6,7 +6,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
