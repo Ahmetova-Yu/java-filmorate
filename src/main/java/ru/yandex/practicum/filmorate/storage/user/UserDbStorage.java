@@ -110,18 +110,6 @@ public class UserDbStorage implements UserStorage {
         return count != null ? count : 0;
     }
 
-    private Map<Long, FriendshipStatus> getFriends(Long userId) {
-        String sql = "SELECT friend_id, status FROM friendships WHERE user_id = ?";
-        Map<Long, FriendshipStatus> friends = new HashMap<>();
-
-        jdbcTemplate.query(sql, (rs) -> {
-            friends.put(rs.getLong("friend_id"),
-                    FriendshipStatus.valueOf(rs.getString("status")));
-        }, userId);
-
-        return friends;
-    }
-
     public void addFriend(Long userId, Long friendId) {
         String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)";
         jdbcTemplate.update(sql, userId, friendId, FriendshipStatus.PENDING.name());
@@ -135,5 +123,17 @@ public class UserDbStorage implements UserStorage {
     public List<Long> getFriendIds(Long userId) {
         String sql = "SELECT friend_id FROM friendships WHERE user_id = ?";
         return jdbcTemplate.queryForList(sql, Long.class, userId);
+    }
+
+    private Map<Long, FriendshipStatus> getFriends(Long userId) {
+        String sql = "SELECT friend_id, status FROM friendships WHERE user_id = ?";
+        Map<Long, FriendshipStatus> friends = new HashMap<>();
+
+        jdbcTemplate.query(sql, (rs) -> {
+            friends.put(rs.getLong("friend_id"),
+                    FriendshipStatus.valueOf(rs.getString("status")));
+        }, userId);
+
+        return friends;
     }
 }

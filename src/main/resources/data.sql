@@ -6,9 +6,9 @@ MERGE INTO mpa_ratings (id, name) KEY(id) VALUES
     (5, 'NC-17');
 
 MERGE INTO genres (id, name) KEY(id) VALUES
-    (1, 'COMEDY'),
-    (2, 'DRAMA'),
-    (3, 'CARTOON'),
-    (4, 'THRILLER'),
-    (5, 'DOCUMENTARY'),
-    (6, 'ACTION');
+    (1, 'Комедия'),
+    (2, 'Драма'),
+    (3, 'Мультфильм'),
+    (4, 'Триллер'),
+    (5, 'Документальный'),
+    (6, 'Боевик');

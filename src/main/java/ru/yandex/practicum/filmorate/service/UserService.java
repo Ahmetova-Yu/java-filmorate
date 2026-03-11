@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,9 +58,6 @@ public class UserService {
 
         if (userStorage instanceof UserDbStorage) {
             ((UserDbStorage) userStorage).addFriend(userId, friendId);
-        } else {
-            User user = getUserById(userId);
-            user.getFriends().put(friendId, null);
         }
     }
 
@@ -69,9 +67,6 @@ public class UserService {
 
         if (userStorage instanceof UserDbStorage) {
             ((UserDbStorage) userStorage).removeFriend(userId, friendId);
-        } else {
-            User user = getUserById(userId);
-            user.getFriends().remove(friendId);
         }
     }
 
@@ -82,11 +77,8 @@ public class UserService {
             return ((UserDbStorage) userStorage).getFriendIds(userId).stream()
                     .map(this::getUserById)
                     .collect(Collectors.toList());
-        } else {
-            return getUserById(userId).getFriends().keySet().stream()
-                    .map(this::getUserById)
-                    .collect(Collectors.toList());
         }
+        return List.of();
     }
 
     public Collection<User> getCommonFriends(Long userId, Long otherId) {
@@ -101,14 +93,7 @@ public class UserService {
                     .filter(otherFriends::contains)
                     .map(this::getUserById)
                     .collect(Collectors.toList());
-        } else {
-            var userFriends = getUserById(userId).getFriends().keySet();
-            var otherFriends = getUserById(otherId).getFriends().keySet();
-
-            return userFriends.stream()
-                    .filter(otherFriends::contains)
-                    .map(this::getUserById)
-                    .collect(Collectors.toList());
         }
+        return List.of();
     }
 }
