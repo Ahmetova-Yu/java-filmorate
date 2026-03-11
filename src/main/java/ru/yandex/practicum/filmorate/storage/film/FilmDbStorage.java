@@ -131,7 +131,7 @@ public class FilmDbStorage implements FilmStorage {
 
     private Set<Genre> getGenres(Long filmId) {
         String sql = "SELECT genre_id FROM film_genres WHERE film_id = ? ORDER BY genre_id";
-        Set<Genre> genres = new HashSet<>();
+        Set<Genre> genres = new LinkedHashSet<>();
 
         List<Integer> genreIds = jdbcTemplate.queryForList(sql, Integer.class, filmId);
         for (Integer genreId : genreIds) {
@@ -154,5 +154,26 @@ public class FilmDbStorage implements FilmStorage {
     private void deleteGenres(Long filmId) {
         String sql = "DELETE FROM film_genres WHERE film_id = ?";
         jdbcTemplate.update(sql, filmId);
+    }
+
+    public void addLike(Long filmId, Long userId) {
+        String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
+        jdbcTemplate.update(sql, filmId, userId);
+    }
+
+    public void removeLike(Long filmId, Long userId) {
+        String sql = "DELETE FROM likes WHERE film_id = ? AND user_id = ?";
+        jdbcTemplate.update(sql, filmId, userId);
+    }
+
+    public List<Film> getMostPopularFilms(int count) {
+        String sql = "SELECT f.*, COUNT(l.user_id) as likes_count " +
+                "FROM films f " +
+                "LEFT JOIN likes l ON f.id = l.film_id " +
+                "GROUP BY f.id " +
+                "ORDER BY likes_count DESC " +
+                "LIMIT ?";
+
+        return jdbcTemplate.query(sql, filmRowMapper, count);
     }
 }
