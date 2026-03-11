@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
@@ -98,7 +98,6 @@ public class FilmController {
             film.setId(Long.valueOf(filmData.get("id").toString()));
         }
 
-        // Проверка на null для обязательных полей
         if (filmData.containsKey("name") && filmData.get("name") != null) {
             film.setName((String) filmData.get("name"));
         }
@@ -119,9 +118,10 @@ public class FilmController {
             Map<String, Object> mpaData = (Map<String, Object>) filmData.get("mpa");
             if (mpaData.containsKey("id") && mpaData.get("id") != null) {
                 int mpaId = ((Integer) mpaData.get("id"));
-                if (mpaId >= 1 && mpaId <= MpaRating.values().length) {
-                    film.setMpaRating(MpaRating.values()[mpaId - 1]);
-                }
+                Mpa mpa = new Mpa();
+                mpa.setId(mpaId);
+                mpa.setName(getMpaNameById(mpaId));
+                film.setMpa(mpa);
             }
         }
 
@@ -131,9 +131,10 @@ public class FilmController {
             for (Map<String, Integer> genreData : genresData) {
                 if (genreData.containsKey("id") && genreData.get("id") != null) {
                     int genreId = genreData.get("id");
-                    if (genreId >= 1 && genreId <= Genre.values().length) {
-                        genres.add(Genre.values()[genreId - 1]);
-                    }
+                    Genre genre = new Genre();
+                    genre.setId(genreId);
+                    genre.setName(getGenreNameById(genreId));
+                    genres.add(genre);
                 }
             }
             film.setGenres(genres);
@@ -151,31 +152,51 @@ public class FilmController {
         response.put("duration", film.getDuration());
         response.put("likes", new ArrayList<>(film.getLikes()));
 
-        // Добавляем mpa объект
-        if (film.getMpaRating() != null) {
+        if (film.getMpa() != null) {
             Map<String, Object> mpa = new HashMap<>();
-            mpa.put("id", film.getMpaRating().ordinal() + 1);
-            mpa.put("name", film.getMpaRating().name());
+            mpa.put("id", film.getMpa().getId());
+            mpa.put("name", film.getMpa().getName());
             response.put("mpa", mpa);
         } else {
             response.put("mpa", null);
         }
 
-        // Добавляем жанры
         List<Map<String, Object>> genres = new ArrayList<>();
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
                 Map<String, Object> genreMap = new HashMap<>();
-                genreMap.put("id", genre.ordinal() + 1);
+                genreMap.put("id", genre.getId());
                 genreMap.put("name", genre.getName());
                 genres.add(genreMap);
             }
         }
-        // Сортируем жанры по id
         genres.sort(Comparator.comparingInt(g -> (int) g.get("id")));
         response.put("genres", genres);
 
         return response;
+    }
+
+    private String getMpaNameById(int id) {
+        switch (id) {
+            case 1: return "G";
+            case 2: return "PG";
+            case 3: return "PG-13";
+            case 4: return "R";
+            case 5: return "NC-17";
+            default: return "G";
+        }
+    }
+
+    private String getGenreNameById(int id) {
+        switch (id) {
+            case 1: return "Комедия";
+            case 2: return "Драма";
+            case 3: return "Мультфильм";
+            case 4: return "Триллер";
+            case 5: return "Документальный";
+            case 6: return "Боевик";
+            default: return "Комедия";
+        }
     }
 
     private void validate(Film film, String info) {

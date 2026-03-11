@@ -7,7 +7,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.GenreEnum;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
@@ -39,7 +39,7 @@ class FilmDbStorageTest {
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
         film.setMpaRating(MpaRating.PG_13);
-        film.setGenres(Set.of(Genre.COMEDY, Genre.ACTION));
+        film.setGenres(Set.of(GenreEnum.COMEDY, GenreEnum.ACTION));
 
         Film created = filmStorage.createFilm(film);
 
@@ -112,7 +112,7 @@ class FilmDbStorageTest {
 
         created.setName("Updated Film");
         created.setMpaRating(MpaRating.R);
-        created.setGenres(Set.of(Genre.DRAMA));
+        created.setGenres(Set.of(GenreEnum.DRAMA));
 
         filmStorage.updateFilm(created);
 

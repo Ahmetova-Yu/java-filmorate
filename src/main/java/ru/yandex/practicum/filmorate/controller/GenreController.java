@@ -14,33 +14,30 @@ import java.util.stream.Collectors;
 public class GenreController {
 
     @GetMapping
-    public List<Map<String, Object>> getAllGenres() {
+    public List<Genre> getAllGenres() {
         log.info("Запрос на получение всех жанров");
-
-        return Arrays.stream(Genre.values())
-                .map(genre -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", genre.ordinal() + 1);
-                    map.put("name", genre.getName());
-                    return map;
-                })
-                .sorted(Comparator.comparingInt(m -> (int) m.get("id")))
-                .collect(Collectors.toList());
+        return Arrays.asList(
+                new Genre(1, "Комедия"),
+                new Genre(2, "Драма"),
+                new Genre(3, "Мультфильм"),
+                new Genre(4, "Триллер"),
+                new Genre(5, "Документальный"),
+                new Genre(6, "Боевик")
+        );
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> getGenreById(@PathVariable int id) {
+    public Genre getGenreById(@PathVariable int id) {
         log.info("Запрос на получение жанра с id {}", id);
 
-        if (id < 1 || id > Genre.values().length) {
-            throw new NotFoundException("Жанр с id " + id + " не найден");
+        switch (id) {
+            case 1: return new Genre(1, "Комедия");
+            case 2: return new Genre(2, "Драма");
+            case 3: return new Genre(3, "Мультфильм");
+            case 4: return new Genre(4, "Триллер");
+            case 5: return new Genre(5, "Документальный");
+            case 6: return new Genre(6, "Боевик");
+            default: throw new NotFoundException("Жанр с id " + id + " не найден");
         }
-
-        Genre genre = Genre.values()[id - 1];
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", id);
-        response.put("name", genre.getName());
-
-        return response;
     }
 }

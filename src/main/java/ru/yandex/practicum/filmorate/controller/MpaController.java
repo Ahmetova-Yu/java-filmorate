@@ -3,10 +3,9 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -14,33 +13,28 @@ import java.util.stream.Collectors;
 public class MpaController {
 
     @GetMapping
-    public List<Map<String, Object>> getAllMpa() {
+    public List<Mpa> getAllMpa() {
         log.info("Запрос на получение всех рейтингов MPA");
-
-        return Arrays.stream(MpaRating.values())
-                .map(mpa -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("id", mpa.ordinal() + 1);
-                    map.put("name", mpa.name());
-                    return map;
-                })
-                .sorted(Comparator.comparingInt(m -> (int) m.get("id")))
-                .collect(Collectors.toList());
+        return Arrays.asList(
+                new Mpa(1, "G"),
+                new Mpa(2, "PG"),
+                new Mpa(3, "PG-13"),
+                new Mpa(4, "R"),
+                new Mpa(5, "NC-17")
+        );
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> getMpaById(@PathVariable int id) {
+    public Mpa getMpaById(@PathVariable int id) {
         log.info("Запрос на получение рейтинга MPA с id {}", id);
 
-        if (id < 1 || id > MpaRating.values().length) {
-            throw new NotFoundException("Рейтинг mpa с id " + id + " не найден");
+        switch (id) {
+            case 1: return new Mpa(1, "G");
+            case 2: return new Mpa(2, "PG");
+            case 3: return new Mpa(3, "PG-13");
+            case 4: return new Mpa(4, "R");
+            case 5: return new Mpa(5, "NC-17");
+            default: throw new NotFoundException("Рейтинг mpa с id " + id + " не найден");
         }
-
-        MpaRating mpa = MpaRating.values()[id - 1];
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", id);
-        response.put("name", mpa.name());
-
-        return response;
     }
 }

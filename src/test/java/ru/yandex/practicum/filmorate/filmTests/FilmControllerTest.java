@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.GenreEnum;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
@@ -39,7 +39,7 @@ class FilmControllerTest {
         validFilm.setReleaseDate(LocalDate.of(2020, 1, 4));
         validFilm.setDuration(120);
         validFilm.setMpaRating(MpaRating.PG_13);
-        validFilm.setGenres(Set.of(Genre.COMEDY, Genre.ACTION));
+        validFilm.setGenres(Set.of(GenreEnum.COMEDY, GenreEnum.ACTION));
     }
 
     @Test

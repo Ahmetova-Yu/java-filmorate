@@ -9,7 +9,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.GenreEnum;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 
 import java.sql.PreparedStatement;
@@ -158,24 +158,24 @@ public class FilmDbStorage implements FilmStorage {
         return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, filmId));
     }
 
-    private Set<Genre> getGenres(Long filmId) {
+    private Set<GenreEnum> getGenres(Long filmId) {
         String sql = "SELECT genre_id FROM film_genres WHERE film_id = ? ORDER BY genre_id";
-        Set<Genre> genres = new LinkedHashSet<>();
+        Set<GenreEnum> genres = new LinkedHashSet<>();
 
         List<Integer> genreIds = jdbcTemplate.queryForList(sql, Integer.class, filmId);
         for (Integer genreId : genreIds) {
-            genres.add(Genre.values()[genreId - 1]);
+            genres.add(GenreEnum.values()[genreId - 1]);
         }
 
         return genres;
     }
 
-    private void saveGenres(Long filmId, Set<Genre> genres) {
+    private void saveGenres(Long filmId, Set<GenreEnum> genres) {
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 
-        Set<Genre> uniqueGenres = new HashSet<>(genres);
+        Set<GenreEnum> uniqueGenres = new HashSet<>(genres);
 
-        for (Genre genre : uniqueGenres) {
+        for (GenreEnum genre : uniqueGenres) {
             if (genre != null) {
                 try {
                     jdbcTemplate.update(sql, filmId, genre.ordinal() + 1);
