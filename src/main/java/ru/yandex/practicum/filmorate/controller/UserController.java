@@ -27,10 +27,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@RequestBody User user) {
         validate(user, "создании");
-
         User createUser = userService.createUser(user);
         log.info("Пользователь {} успешно создан", user.getId());
-
         return createUser;
     }
 
@@ -38,11 +36,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public User updateUser(@RequestBody User newUser) {
         validate(newUser, "обновлении");
-
         User createdUser = userService.updateUser(newUser);
-
         log.info("Пользователь {} успешно обновлен", createdUser.getId());
-
         return createdUser;
     }
 
@@ -106,6 +101,11 @@ public class UserController {
         if (user.getName() == null || user.getName().isBlank()) {
             log.info("Имя пользователя не указано при {}, используем логин: {}", info, user.getLogin());
             user.setName(user.getLogin());
+        }
+
+        if (user.getBirthday() == null) {
+            log.error("Ошибка валидации при {}: дата рождения не указана", info);
+            throw new ValidationException("Дата рождения должна быть указана");
         }
 
         if (user.getBirthday().isAfter(LocalDate.now())) {

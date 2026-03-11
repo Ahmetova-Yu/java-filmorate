@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -21,10 +20,13 @@ import java.util.*;
 @Repository
 @Qualifier("userDbStorage")
 @Primary
-@RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
+
+    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     private final RowMapper<User> userRowMapper = (rs, rowNum) -> {
         User user = new User();
@@ -57,7 +59,6 @@ public class UserDbStorage implements UserStorage {
             user.setId(key.longValue());
         }
 
-        log.debug("Пользователь сохранен в БД: id={}", user.getId());
         return user;
     }
 
@@ -73,7 +74,6 @@ public class UserDbStorage implements UserStorage {
                 user.getId()
         );
 
-        log.debug("Пользователь обновлен в БД: id={}", user.getId());
         return user;
     }
 

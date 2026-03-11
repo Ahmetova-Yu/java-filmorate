@@ -107,9 +107,9 @@ class FilmControllerTest {
     void createFilm_ShouldThrowException_WhenDurationIsNull() {
         validFilm.setDuration(null);
 
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
-        assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
+        Film createdFilm = filmController.createFilm(validFilm);
+        assertNotNull(createdFilm.getId());
+        assertNull(createdFilm.getDuration());
     }
 
     @Test

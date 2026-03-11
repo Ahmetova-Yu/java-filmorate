@@ -144,7 +144,7 @@ class UserControllerTest {
 
         ValidationException exception = assertThrows(ValidationException.class,
                 () -> userController.createUser(validUser));
-        assertEquals("Дата рождения не может быть в будущем", exception.getMessage());
+        assertEquals("Дата рождения должна быть указана", exception.getMessage());
     }
 
     @Test
