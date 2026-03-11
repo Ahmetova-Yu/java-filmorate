@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,152 +47,233 @@ class FilmControllerTest {
         validFilm.setName("");
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(Map.of(
+                        "name", "",
+                        "description", validFilm.getDescription(),
+                        "releaseDate", validFilm.getReleaseDate().toString(),
+                        "duration", validFilm.getDuration(),
+                        "mpa", Map.of("id", 3)
+                )));
         assertEquals("Имя фильма не должно быть пустым", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenNameIsNull() {
-        validFilm.setName(null);
+        Map<String, Object> filmData = new HashMap<>();
+        filmData.put("name", null);
+        filmData.put("description", validFilm.getDescription());
+        filmData.put("releaseDate", validFilm.getReleaseDate().toString());
+        filmData.put("duration", validFilm.getDuration());
+        filmData.put("mpa", Map.of("id", 3));
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(filmData));
         assertEquals("Имя фильма не должно быть пустым", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenDescriptionIsTooLong() {
-        validFilm.setDescription("a".repeat(201));
+        String longDescription = "a".repeat(201);
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(Map.of(
+                        "name", validFilm.getName(),
+                        "description", longDescription,
+                        "releaseDate", validFilm.getReleaseDate().toString(),
+                        "duration", validFilm.getDuration(),
+                        "mpa", Map.of("id", 3)
+                )));
         assertEquals("Максимальная длина описания — 200 символов", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenDescriptionIsExactly200Chars() {
-        validFilm.setDescription("a".repeat(200));
+        String exactDescription = "a".repeat(200);
 
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        Map<String, Object> createdFilm = filmController.createFilm(Map.of(
+                "name", validFilm.getName(),
+                "description", exactDescription,
+                "releaseDate", validFilm.getReleaseDate().toString(),
+                "duration", validFilm.getDuration(),
+                "mpa", Map.of("id", 3)
+        ));
+
         assertNotNull(createdFilm.get("id"));
-        assertEquals(200, validFilm.getDescription().length());
+        assertEquals(exactDescription, createdFilm.get("description"));
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenReleaseDateIsNull() {
-        validFilm.setReleaseDate(null);
+        Map<String, Object> filmData = new HashMap<>();
+        filmData.put("name", validFilm.getName());
+        filmData.put("description", validFilm.getDescription());
+        filmData.put("releaseDate", null);
+        filmData.put("duration", validFilm.getDuration());
+        filmData.put("mpa", Map.of("id", 3));
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(filmData));
         assertEquals("Дата релиза должна быть указана", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenReleaseDateIsTooEarly() {
-        validFilm.setReleaseDate(LocalDate.of(1895, 12, 27));
-
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(Map.of(
+                        "name", validFilm.getName(),
+                        "description", validFilm.getDescription(),
+                        "releaseDate", "1895-12-27",
+                        "duration", validFilm.getDuration(),
+                        "mpa", Map.of("id", 3)
+                )));
         assertEquals("Дата релиза не может быть раньше 28 декабря 1895 года", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldAllowReleaseDateExactly1895_12_28() {
-        validFilm.setReleaseDate(LocalDate.of(1895, 12, 28));
+        Map<String, Object> createdFilm = filmController.createFilm(Map.of(
+                "name", validFilm.getName(),
+                "description", validFilm.getDescription(),
+                "releaseDate", "1895-12-28",
+                "duration", validFilm.getDuration(),
+                "mpa", Map.of("id", 3)
+        ));
 
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
         assertNotNull(createdFilm.get("id"));
-        assertEquals(LocalDate.of(1895, 12, 28), validFilm.getReleaseDate());
+        assertEquals("1895-12-28", createdFilm.get("releaseDate"));
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenDurationIsNull() {
-        validFilm.setDuration(null);
+        Map<String, Object> filmData = new HashMap<>();
+        filmData.put("name", validFilm.getName());
+        filmData.put("description", validFilm.getDescription());
+        filmData.put("releaseDate", validFilm.getReleaseDate().toString());
+        filmData.put("duration", null);
+        filmData.put("mpa", Map.of("id", 3));
 
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(filmData));
         assertEquals("Продолжительность фильма должна быть указана", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenDurationIsNegative() {
-        validFilm.setDuration(-10);
-
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(Map.of(
+                        "name", validFilm.getName(),
+                        "description", validFilm.getDescription(),
+                        "releaseDate", validFilm.getReleaseDate().toString(),
+                        "duration", -10,
+                        "mpa", Map.of("id", 3)
+                )));
         assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldThrowException_WhenDurationIsZero() {
-        validFilm.setDuration(0);
-
         ValidationException exception = assertThrows(ValidationException.class,
-                () -> filmController.createFilm(validFilm));
+                () -> filmController.createFilm(Map.of(
+                        "name", validFilm.getName(),
+                        "description", validFilm.getDescription(),
+                        "releaseDate", validFilm.getReleaseDate().toString(),
+                        "duration", 0,
+                        "mpa", Map.of("id", 3)
+                )));
         assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenMpaRatingIsNull() {
-        validFilm.setMpaRating(null);
+        Map<String, Object> createdFilm = filmController.createFilm(Map.of(
+                "name", validFilm.getName(),
+                "description", validFilm.getDescription(),
+                "releaseDate", validFilm.getReleaseDate().toString(),
+                "duration", validFilm.getDuration()
+        ));
 
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
         assertNotNull(createdFilm.get("id"));
         assertNull(createdFilm.get("mpa"));
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenGenresIsNull() {
-        validFilm.setGenres(null);
+        Map<String, Object> createdFilm = filmController.createFilm(Map.of(
+                "name", validFilm.getName(),
+                "description", validFilm.getDescription(),
+                "releaseDate", validFilm.getReleaseDate().toString(),
+                "duration", validFilm.getDuration(),
+                "mpa", Map.of("id", 3)
+        ));
 
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
         assertNotNull(createdFilm.get("id"));
         assertEquals(0, ((java.util.List<?>) createdFilm.get("genres")).size());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenGenresIsEmpty() {
-        validFilm.setGenres(Set.of());
+        Map<String, Object> createdFilm = filmController.createFilm(Map.of(
+                "name", validFilm.getName(),
+                "description", validFilm.getDescription(),
+                "releaseDate", validFilm.getReleaseDate().toString(),
+                "duration", validFilm.getDuration(),
+                "mpa", Map.of("id", 3),
+                "genres", new java.util.ArrayList<>()
+        ));
 
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
         assertNotNull(createdFilm.get("id"));
         assertEquals(0, ((java.util.List<?>) createdFilm.get("genres")).size());
     }
 
     @Test
     void createFilm_ShouldCreateFilm_WhenAllFieldsAreValid() {
-        Map<String, Object> createdFilm = filmController.createFilm(validFilm);
+        Map<String, Object> filmData = Map.of(
+                "name", validFilm.getName(),
+                "description", validFilm.getDescription(),
+                "releaseDate", validFilm.getReleaseDate().toString(),
+                "duration", validFilm.getDuration(),
+                "mpa", Map.of("id", 3),
+                "genres", java.util.List.of(Map.of("id", 1), Map.of("id", 6))
+        );
+
+        Map<String, Object> createdFilm = filmController.createFilm(filmData);
 
         assertNotNull(createdFilm.get("id"));
-        assertEquals(1L, createdFilm.get("id"));
         assertEquals(validFilm.getName(), createdFilm.get("name"));
         assertEquals(validFilm.getDescription(), createdFilm.get("description"));
-        assertEquals(validFilm.getReleaseDate().toString(), createdFilm.get("releaseDate").toString());
+        assertEquals(validFilm.getReleaseDate().toString(), createdFilm.get("releaseDate"));
         assertEquals(validFilm.getDuration(), createdFilm.get("duration"));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> mpa = (Map<String, Object>) createdFilm.get("mpa");
         assertNotNull(mpa);
-        assertEquals(3, mpa.get("id")); // PG_13 ordinal + 1 = 3
+        assertEquals(3, mpa.get("id"));
         assertEquals("PG_13", mpa.get("name"));
 
         @SuppressWarnings("unchecked")
-        java.util.List<Map<String, Integer>> genres = (java.util.List<Map<String, Integer>>) createdFilm.get("genres");
+        java.util.List<Map<String, Object>> genres = (java.util.List<Map<String, Object>>) createdFilm.get("genres");
         assertEquals(2, genres.size());
     }
 
     @Test
     void createFilm_ShouldGenerateNewId_ForMultipleFilms() {
-        Map<String, Object> firstFilm = filmController.createFilm(validFilm);
+        Map<String, Object> firstFilmData = Map.of(
+                "name", "Первый фильм",
+                "description", "Описание первого",
+                "releaseDate", "2020-01-01",
+                "duration", 120,
+                "mpa", Map.of("id", 3)
+        );
+        Map<String, Object> firstFilm = filmController.createFilm(firstFilmData);
 
-        Film secondFilm = new Film();
-        secondFilm.setName("Второй фильм");
-        secondFilm.setDescription("Описание 2");
-        secondFilm.setReleaseDate(LocalDate.of(2010, 1, 1));
-        secondFilm.setDuration(90);
-        secondFilm.setMpaRating(MpaRating.R);
-
-        Map<String, Object> createdSecond = filmController.createFilm(secondFilm);
+        Map<String, Object> secondFilmData = Map.of(
+                "name", "Второй фильм",
+                "description", "Описание второго",
+                "releaseDate", "2021-01-01",
+                "duration", 90,
+                "mpa", Map.of("id", 4)
+        );
+        Map<String, Object> createdSecond = filmController.createFilm(secondFilmData);
 
         assertEquals(1L, firstFilm.get("id"));
         assertEquals(2L, createdSecond.get("id"));

@@ -101,6 +101,53 @@ class UserDbStorageTest {
         assertThat(friends).contains(created2.getId());
 
         var friends2 = userStorage.getFriendIds(created2.getId());
-        assertThat(friends2).doesNotContain(created1.getId()); // односторонняя дружба
+        assertThat(friends2).doesNotContain(created1.getId());
+    }
+
+    @Test
+    void testRemoveFriend() {
+        User user1 = new User();
+        user1.setEmail("user1@mail.ru");
+        user1.setLogin("user1");
+        user1.setName("User 1");
+        user1.setBirthday(LocalDate.of(1990, 1, 1));
+
+        User user2 = new User();
+        user2.setEmail("user2@mail.ru");
+        user2.setLogin("user2");
+        user2.setName("User 2");
+        user2.setBirthday(LocalDate.of(1995, 1, 1));
+
+        User created1 = userStorage.createUser(user1);
+        User created2 = userStorage.createUser(user2);
+
+        userStorage.addFriend(created1.getId(), created2.getId());
+        userStorage.removeFriend(created1.getId(), created2.getId());
+
+        var friends = userStorage.getFriendIds(created1.getId());
+        assertThat(friends).doesNotContain(created2.getId());
+    }
+
+    @Test
+    void testGetUserByIdNotFound() {
+        Optional<User> found = userStorage.getUserById(999L);
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void testContainsUser() {
+        User user = new User();
+        user.setEmail("test@mail.ru");
+        user.setLogin("testLogin");
+        user.setName("Test Name");
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+
+        User created = userStorage.createUser(user);
+
+        boolean contains = userStorage.containsUser(created.getId());
+        assertThat(contains).isTrue();
+
+        boolean notContains = userStorage.containsUser(999L);
+        assertThat(notContains).isFalse();
     }
 }

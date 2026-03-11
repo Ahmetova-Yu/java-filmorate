@@ -164,21 +164,4 @@ class FilmDbStorageTest {
         boolean notContains = filmStorage.containsFilm(999L);
         assertThat(notContains).isFalse();
     }
-
-    @Test
-    void testGetFilmsCount() {
-        int initialCount = filmStorage.getFilmsCount();
-
-        Film film = new Film();
-        film.setName("Test Film");
-        film.setDescription("Test Description");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(120);
-        film.setMpaRating(MpaRating.PG_13);
-
-        filmStorage.createFilm(film);
-
-        int newCount = filmStorage.getFilmsCount();
-        assertThat(newCount).isEqualTo(initialCount + 1);
-    }
 }

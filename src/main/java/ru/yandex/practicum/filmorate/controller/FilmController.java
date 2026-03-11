@@ -94,29 +94,47 @@ public class FilmController {
     private Film convertToFilm(Map<String, Object> filmData) {
         Film film = new Film();
 
-        if (filmData.containsKey("id")) {
+        if (filmData.containsKey("id") && filmData.get("id") != null) {
             film.setId(Long.valueOf(filmData.get("id").toString()));
         }
 
-        film.setName((String) filmData.get("name"));
-        film.setDescription((String) filmData.get("description"));
-        film.setReleaseDate(LocalDate.parse((String) filmData.get("releaseDate")));
-        film.setDuration((Integer) filmData.get("duration"));
-
-        // Обработка mpa
-        if (filmData.containsKey("mpa") && filmData.get("mpa") != null) {
-            Map<String, Object> mpaData = (Map<String, Object>) filmData.get("mpa");
-            int mpaId = ((Integer) mpaData.get("id"));
-            film.setMpaRating(MpaRating.values()[mpaId - 1]);
+        // Проверка на null для обязательных полей
+        if (filmData.containsKey("name") && filmData.get("name") != null) {
+            film.setName((String) filmData.get("name"));
         }
 
-        // Обработка жанров
+        if (filmData.containsKey("description") && filmData.get("description") != null) {
+            film.setDescription((String) filmData.get("description"));
+        }
+
+        if (filmData.containsKey("releaseDate") && filmData.get("releaseDate") != null) {
+            film.setReleaseDate(LocalDate.parse((String) filmData.get("releaseDate")));
+        }
+
+        if (filmData.containsKey("duration") && filmData.get("duration") != null) {
+            film.setDuration((Integer) filmData.get("duration"));
+        }
+
+        if (filmData.containsKey("mpa") && filmData.get("mpa") != null) {
+            Map<String, Object> mpaData = (Map<String, Object>) filmData.get("mpa");
+            if (mpaData.containsKey("id") && mpaData.get("id") != null) {
+                int mpaId = ((Integer) mpaData.get("id"));
+                if (mpaId >= 1 && mpaId <= MpaRating.values().length) {
+                    film.setMpaRating(MpaRating.values()[mpaId - 1]);
+                }
+            }
+        }
+
         if (filmData.containsKey("genres") && filmData.get("genres") != null) {
             List<Map<String, Integer>> genresData = (List<Map<String, Integer>>) filmData.get("genres");
             Set<Genre> genres = new HashSet<>();
             for (Map<String, Integer> genreData : genresData) {
-                int genreId = genreData.get("id");
-                genres.add(Genre.values()[genreId - 1]);
+                if (genreData.containsKey("id") && genreData.get("id") != null) {
+                    int genreId = genreData.get("id");
+                    if (genreId >= 1 && genreId <= Genre.values().length) {
+                        genres.add(Genre.values()[genreId - 1]);
+                    }
+                }
             }
             film.setGenres(genres);
         }
