@@ -47,7 +47,7 @@ public class UserDbStorage implements UserStorage {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getLogin());
-            ps.setString(3, user.getName());
+            ps.setString(3, user.getName() != null ? user.getName() : user.getLogin());
             ps.setDate(4, Date.valueOf(user.getBirthday()));
             return ps;
         }, keyHolder);
@@ -120,5 +120,20 @@ public class UserDbStorage implements UserStorage {
         }, userId);
 
         return friends;
+    }
+
+    public void addFriend(Long userId, Long friendId) {
+        String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)";
+        jdbcTemplate.update(sql, userId, friendId, FriendshipStatus.PENDING.name());
+    }
+
+    public void removeFriend(Long userId, Long friendId) {
+        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
+    }
+
+    public List<Long> getFriendIds(Long userId) {
+        String sql = "SELECT friend_id FROM friendships WHERE user_id = ?";
+        return jdbcTemplate.queryForList(sql, Long.class, userId);
     }
 }
