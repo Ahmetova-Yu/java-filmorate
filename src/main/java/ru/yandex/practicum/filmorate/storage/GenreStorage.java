@@ -6,6 +6,8 @@ import java.util.Optional;
 
 public interface GenreStorage {
     List<Genre> findAll();
+
     Optional<Genre> findById(int id);
+
     boolean existsById(int id);
 }
