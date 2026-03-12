@@ -87,16 +87,20 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT * FROM films";
         List<Film> films = jdbcTemplate.query(sql, filmRowMapperWithoutDetails);
 
-        Map<Long, Set<Genre>> genresMap = loadGenresForFilms(films);
+        if (films.isEmpty()) {
+            return films;
+        }
 
+        Map<Long, Set<Genre>> genresMap = loadGenresForFilms(films);
         Map<Long, Set<Long>> likesMap = loadLikesForFilms(films);
+        Map<Integer, String> mpaNamesMap = loadAllMpaNames();
 
         for (Film film : films) {
             film.setGenres(genresMap.getOrDefault(film.getId(), new LinkedHashSet<>()));
             film.setLikes(likesMap.getOrDefault(film.getId(), new HashSet<>()));
 
             if (film.getMpa() != null) {
-                film.getMpa().setName(getMpaName(film.getMpa().getId()));
+                film.getMpa().setName(mpaNamesMap.get(film.getMpa().getId()));
             }
         }
 
@@ -115,7 +119,6 @@ public class FilmDbStorage implements FilmStorage {
         Film film = films.get(0);
 
         film.setGenres(getGenresForFilm(id));
-
         film.setLikes(getLikesForFilm(id));
 
         if (film.getMpa() != null) {
@@ -170,15 +173,15 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         Map<Long, Set<Genre>> genresMap = loadGenresForFilms(films);
-
         Map<Long, Set<Long>> likesMap = loadLikesForFilms(films);
+        Map<Integer, String> mpaNamesMap = loadAllMpaNames();
 
         for (Film film : films) {
             film.setGenres(genresMap.getOrDefault(film.getId(), new LinkedHashSet<>()));
             film.setLikes(likesMap.getOrDefault(film.getId(), new HashSet<>()));
 
             if (film.getMpa() != null) {
-                film.getMpa().setName(getMpaName(film.getMpa().getId()));
+                film.getMpa().setName(mpaNamesMap.get(film.getMpa().getId()));
             }
         }
 
@@ -196,7 +199,6 @@ public class FilmDbStorage implements FilmStorage {
         int mpaId = rs.getInt("mpa_rating_id");
         Mpa mpa = new Mpa();
         mpa.setId(mpaId);
-
         film.setMpa(mpa);
 
         return film;
@@ -205,6 +207,19 @@ public class FilmDbStorage implements FilmStorage {
     private String getMpaName(int id) {
         String sql = "SELECT name FROM mpa_ratings WHERE id = ?";
         return jdbcTemplate.queryForObject(sql, String.class, id);
+    }
+
+    private Map<Integer, String> loadAllMpaNames() {
+        String sql = "SELECT id, name FROM mpa_ratings";
+        Map<Integer, String> mpaNamesMap = new HashMap<>();
+
+        jdbcTemplate.query(sql, (rs) -> {
+            int id = rs.getInt("id");
+            String name = rs.getString("name");
+            mpaNamesMap.put(id, name);
+        });
+
+        return mpaNamesMap;
     }
 
     private Set<Long> getLikesForFilm(Long filmId) {
