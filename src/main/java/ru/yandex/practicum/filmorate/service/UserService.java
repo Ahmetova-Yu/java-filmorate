@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -70,9 +69,8 @@ public class UserService {
     public Collection<User> getUserFriends(Long userId) {
         getUserById(userId);
         if (userStorage instanceof UserDbStorage) {
-            return ((UserDbStorage) userStorage).getFriendIds(userId).stream()
-                    .map(this::getUserById)
-                    .collect(Collectors.toList());
+            List<Long> friendIds = ((UserDbStorage) userStorage).getFriendIds(userId);
+            return ((UserDbStorage) userStorage).getFriends(friendIds);
         }
         return List.of();
     }
@@ -81,12 +79,14 @@ public class UserService {
         getUserById(userId);
         getUserById(otherId);
         if (userStorage instanceof UserDbStorage) {
-            var userFriends = ((UserDbStorage) userStorage).getFriendIds(userId);
-            var otherFriends = ((UserDbStorage) userStorage).getFriendIds(otherId);
-            return userFriends.stream()
+            List<Long> userFriends = ((UserDbStorage) userStorage).getFriendIds(userId);
+            List<Long> otherFriends = ((UserDbStorage) userStorage).getFriendIds(otherId);
+
+            List<Long> commonIds = userFriends.stream()
                     .filter(otherFriends::contains)
-                    .map(this::getUserById)
-                    .collect(Collectors.toList());
+                    .toList();
+
+            return ((UserDbStorage) userStorage).getFriends(commonIds);
         }
         return List.of();
     }

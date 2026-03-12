@@ -180,13 +180,11 @@ class UserControllerTest {
         User createdUser = userController.createUser(validUser);
 
         assertNotNull(createdUser.getId());
-        assertEquals(1, createdUser.getId());
+        assertEquals(1L, createdUser.getId());
         assertEquals(validUser.getEmail(), createdUser.getEmail());
         assertEquals(validUser.getLogin(), createdUser.getLogin());
         assertEquals(validUser.getName(), createdUser.getName());
         assertEquals(validUser.getBirthday(), createdUser.getBirthday());
-        assertNotNull(createdUser.getFriends());
-        assertTrue(createdUser.getFriends().isEmpty());
     }
 
     @Test
@@ -203,13 +201,5 @@ class UserControllerTest {
 
         assertEquals(1L, firstUser.getId());
         assertEquals(2L, createdSecond.getId());
-    }
-
-    @Test
-    void createUser_ShouldInitializeEmptyFriendsMap() {
-        User createdUser = userController.createUser(validUser);
-
-        assertNotNull(createdUser.getFriends());
-        assertTrue(createdUser.getFriends().isEmpty());
     }
 }

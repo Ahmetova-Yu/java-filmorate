@@ -35,7 +35,6 @@ public class UserDbStorage implements UserStorage {
         user.setLogin(rs.getString("login"));
         user.setName(rs.getString("name"));
         user.setBirthday(rs.getDate("birthday").toLocalDate());
-        user.setFriends(getFriends(user.getId()));
         return user;
     };
 
@@ -125,7 +124,7 @@ public class UserDbStorage implements UserStorage {
         return jdbcTemplate.queryForList(sql, Long.class, userId);
     }
 
-    private Map<Long, FriendshipStatus> getFriends(Long userId) {
+    public Map<Long, FriendshipStatus> getFriends(Long userId) {
         String sql = "SELECT friend_id, status FROM friendships WHERE user_id = ?";
         Map<Long, FriendshipStatus> friends = new HashMap<>();
 
@@ -135,5 +134,16 @@ public class UserDbStorage implements UserStorage {
         }, userId);
 
         return friends;
+    }
+
+    public List<User> getFriends(List<Long> friendIds) {
+        if (friendIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String inSql = String.join(",", Collections.nCopies(friendIds.size(), "?"));
+        String sql = "SELECT * FROM users WHERE id IN (" + inSql + ")";
+
+        return jdbcTemplate.query(sql, userRowMapper, friendIds.toArray());
     }
 }

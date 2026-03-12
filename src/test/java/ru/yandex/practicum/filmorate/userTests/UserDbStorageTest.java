@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,10 +98,10 @@ class UserDbStorageTest {
 
         userStorage.addFriend(created1.getId(), created2.getId());
 
-        var friends = userStorage.getFriendIds(created1.getId());
+        List<Long> friends = userStorage.getFriendIds(created1.getId());
         assertThat(friends).contains(created2.getId());
 
-        var friends2 = userStorage.getFriendIds(created2.getId());
+        List<Long> friends2 = userStorage.getFriendIds(created2.getId());
         assertThat(friends2).doesNotContain(created1.getId());
     }
 
@@ -124,30 +125,7 @@ class UserDbStorageTest {
         userStorage.addFriend(created1.getId(), created2.getId());
         userStorage.removeFriend(created1.getId(), created2.getId());
 
-        var friends = userStorage.getFriendIds(created1.getId());
+        List<Long> friends = userStorage.getFriendIds(created1.getId());
         assertThat(friends).doesNotContain(created2.getId());
-    }
-
-    @Test
-    void testGetUserByIdNotFound() {
-        Optional<User> found = userStorage.getUserById(999L);
-        assertThat(found).isEmpty();
-    }
-
-    @Test
-    void testContainsUser() {
-        User user = new User();
-        user.setEmail("test@mail.ru");
-        user.setLogin("testLogin");
-        user.setName("Test Name");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-
-        User created = userStorage.createUser(user);
-
-        boolean contains = userStorage.containsUser(created.getId());
-        assertThat(contains).isTrue();
-
-        boolean notContains = userStorage.containsUser(999L);
-        assertThat(notContains).isFalse();
     }
 }

@@ -10,6 +10,8 @@ import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -65,7 +67,13 @@ public class FilmService {
             return ((FilmDbStorage) filmStorage).getMostPopularFilms(limit);
         }
         return filmStorage.findAllFilms().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .sorted((f1, f2) -> {
+                    int likes1 = filmStorage instanceof FilmDbStorage ?
+                            ((FilmDbStorage) filmStorage).getLikesCount(f1.getId()) : 0;
+                    int likes2 = filmStorage instanceof FilmDbStorage ?
+                            ((FilmDbStorage) filmStorage).getLikesCount(f2.getId()) : 0;
+                    return Integer.compare(likes2, likes1);
+                })
                 .limit(limit)
                 .toList();
     }
