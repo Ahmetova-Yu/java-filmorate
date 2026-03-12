@@ -11,6 +11,8 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -22,13 +24,15 @@ import java.util.*;
 public class FilmController {
 
     private final FilmService filmService;
+    private final GenreStorage genreStorage;
+    private final MpaStorage mpaStorage;
     private final LocalDate minReleaseDate = LocalDate.of(1895, 12, 28);
-    private final Set<Integer> validMpaIds = Set.of(1, 2, 3, 4, 5);
-    private final Set<Integer> validGenreIds = Set.of(1, 2, 3, 4, 5, 6);
 
     @Autowired
-    public FilmController(FilmService filmService) {
+    public FilmController(FilmService filmService, GenreStorage genreStorage, MpaStorage mpaStorage) {
         this.filmService = filmService;
+        this.genreStorage = genreStorage;
+        this.mpaStorage = mpaStorage;
     }
 
     @PostMapping
@@ -101,7 +105,7 @@ public class FilmController {
 
     private void validateMpaAndGenres(Film film) {
         if (film.getMpa() != null) {
-            if (!validMpaIds.contains(film.getMpa().getId())) {
+            if (!mpaStorage.existsById(film.getMpa().getId())) {
                 log.error("Неверный id MPA: {}", film.getMpa().getId());
                 throw new NotFoundException("Рейтинг mpa с id " + film.getMpa().getId() + " не найден");
             }
@@ -109,7 +113,7 @@ public class FilmController {
 
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
-                if (!validGenreIds.contains(genre.getId())) {
+                if (!genreStorage.existsById(genre.getId())) {
                     log.error("Неверный id жанра: {}", genre.getId());
                     throw new NotFoundException("Жанр с id " + genre.getId() + " не найден");
                 }

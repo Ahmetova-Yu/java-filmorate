@@ -10,12 +10,15 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class FilmControllerTest {
 
@@ -24,13 +27,23 @@ class FilmControllerTest {
     private InMemoryFilmStorage filmStorage;
     private InMemoryUserStorage userStorage;
     private FilmService filmService;
+    private GenreStorage genreStorage;
+    private MpaStorage mpaStorage;
 
     @BeforeEach
     void setUp() {
         filmStorage = new InMemoryFilmStorage();
         userStorage = new InMemoryUserStorage();
         filmService = new FilmService(filmStorage, userStorage);
-        filmController = new FilmController(filmService);
+
+        genreStorage = mock(GenreStorage.class);
+        mpaStorage = mock(MpaStorage.class);
+
+        when(mpaStorage.existsById(3)).thenReturn(true);
+        when(genreStorage.existsById(1)).thenReturn(true);
+        when(genreStorage.existsById(6)).thenReturn(true);
+
+        filmController = new FilmController(filmService, genreStorage, mpaStorage);
 
         Mpa mpa = new Mpa();
         mpa.setId(3);
@@ -173,6 +186,43 @@ class FilmControllerTest {
         assertEquals(validFilm.getMpa().getId(), createdFilm.getMpa().getId());
         assertEquals(validFilm.getMpa().getName(), createdFilm.getMpa().getName());
         assertEquals(2, createdFilm.getGenres().size());
+
+        verify(mpaStorage, times(1)).existsById(3);
+        verify(genreStorage, times(1)).existsById(1);
+        verify(genreStorage, times(1)).existsById(6);
+    }
+
+    @Test
+    void createFilm_ShouldThrowException_WhenMpaIdIsInvalid() {
+        when(mpaStorage.existsById(99)).thenReturn(false);
+
+        Mpa invalidMpa = new Mpa();
+        invalidMpa.setId(99);
+        invalidMpa.setName("Invalid");
+        validFilm.setMpa(invalidMpa);
+
+        ru.yandex.practicum.filmorate.exception.NotFoundException exception =
+                assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                        () -> filmController.createFilm(validFilm));
+        assertEquals("Рейтинг mpa с id 99 не найден", exception.getMessage());
+    }
+
+    @Test
+    void createFilm_ShouldThrowException_WhenGenreIdIsInvalid() {
+        when(genreStorage.existsById(99)).thenReturn(false);
+
+        Genre invalidGenre = new Genre();
+        invalidGenre.setId(99);
+        invalidGenre.setName("Invalid");
+
+        Set<Genre> genres = new HashSet<>(validFilm.getGenres());
+        genres.add(invalidGenre);
+        validFilm.setGenres(genres);
+
+        ru.yandex.practicum.filmorate.exception.NotFoundException exception =
+                assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
+                        () -> filmController.createFilm(validFilm));
+        assertEquals("Жанр с id 99 не найден", exception.getMessage());
     }
 
     @Test
@@ -182,6 +232,8 @@ class FilmControllerTest {
         Mpa mpa = new Mpa();
         mpa.setId(4);
         mpa.setName("R");
+
+        when(mpaStorage.existsById(4)).thenReturn(true);
 
         Film secondFilm = new Film();
         secondFilm.setName("Второй фильм");
