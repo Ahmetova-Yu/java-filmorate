@@ -6,16 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.GenreStorage;
-import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -24,25 +20,19 @@ import java.util.*;
 public class FilmController {
 
     private final FilmService filmService;
-    private final GenreStorage genreStorage;
-    private final MpaStorage mpaStorage;
-    private final LocalDate minReleaseDate = LocalDate.of(1895, 12, 28);
 
     @Autowired
-    public FilmController(FilmService filmService, GenreStorage genreStorage, MpaStorage mpaStorage) {
+    public FilmController(FilmService filmService) {
         this.filmService = filmService;
-        this.genreStorage = genreStorage;
-        this.mpaStorage = mpaStorage;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Film createFilm(@RequestBody Film film) {
-        validateMpaAndGenres(film);
         validate(film, "создании");
         Film createdFilm = filmService.createFilm(film);
         log.info("Фильм {} успешно создан", createdFilm.getId());
-        return enrichFilmWithDetails(createdFilm);
+        return createdFilm;
     }
 
     @PutMapping
@@ -52,25 +42,22 @@ public class FilmController {
             log.error("ID фильма не может быть null при обновлении");
             throw new ValidationException("ID фильма должен быть указан");
         }
-        validateMpaAndGenres(film);
         validate(film, "обновлении");
         Film updatedFilm = filmService.updateFilm(film);
         log.info("Фильм с id {} успешно обновлен", film.getId());
-        return enrichFilmWithDetails(updatedFilm);
+        return updatedFilm;
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Film> findAllFilms() {
-        return filmService.findAllFilms().stream()
-                .map(this::enrichFilmWithDetails)
-                .toList();
+        return filmService.findAllFilms();
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Film getFilmById(@PathVariable Long id) {
-        return enrichFilmWithDetails(filmService.getFilmById(id));
+        return filmService.getFilmById(id);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -89,36 +76,7 @@ public class FilmController {
     @ResponseStatus(HttpStatus.OK)
     public List<Film> getMostPopularFilms(@RequestParam(defaultValue = "10")
                                           @Positive(message = "Количество фильмов должно быть положительным") Integer count) {
-        return filmService.getMostPopularFilms(count).stream()
-                .map(this::enrichFilmWithDetails)
-                .toList();
-    }
-
-    private Film enrichFilmWithDetails(Film film) {
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            List<Genre> sortedGenres = new ArrayList<>(film.getGenres());
-            sortedGenres.sort(Comparator.comparingInt(Genre::getId));
-            film.setGenres(new LinkedHashSet<>(sortedGenres));
-        }
-        return film;
-    }
-
-    private void validateMpaAndGenres(Film film) {
-        if (film.getMpa() != null) {
-            if (!mpaStorage.existsById(film.getMpa().getId())) {
-                log.error("Неверный id MPA: {}", film.getMpa().getId());
-                throw new NotFoundException("Рейтинг mpa с id " + film.getMpa().getId() + " не найден");
-            }
-        }
-
-        if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                if (!genreStorage.existsById(genre.getId())) {
-                    log.error("Неверный id жанра: {}", genre.getId());
-                    throw new NotFoundException("Жанр с id " + genre.getId() + " не найден");
-                }
-            }
-        }
+        return filmService.getMostPopularFilms(count);
     }
 
     private void validate(Film film, String info) {
@@ -134,8 +92,8 @@ public class FilmController {
             log.error("Ошибка валидации при {}: дата релиза не указана", info);
             throw new ValidationException("Дата релиза должна быть указана");
         }
-        if (film.getReleaseDate().isBefore(minReleaseDate)) {
-            log.error("Ошибка валидации при {}: дата релиза {} раньше минимальной {}", info, film.getReleaseDate(), minReleaseDate);
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.error("Ошибка валидации при {}: дата релиза {} раньше минимальной", info, film.getReleaseDate());
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
         }
         if (film.getDuration() == null) {

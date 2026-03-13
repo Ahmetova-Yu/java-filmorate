@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.filmTests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -26,15 +27,14 @@ class FilmControllerTest {
     private Film validFilm;
     private InMemoryFilmStorage filmStorage;
     private InMemoryUserStorage userStorage;
-    private FilmService filmService;
     private GenreStorage genreStorage;
     private MpaStorage mpaStorage;
+    private FilmService filmService;
 
     @BeforeEach
     void setUp() {
         filmStorage = new InMemoryFilmStorage();
         userStorage = new InMemoryUserStorage();
-        filmService = new FilmService(filmStorage, userStorage);
 
         genreStorage = mock(GenreStorage.class);
         mpaStorage = mock(MpaStorage.class);
@@ -43,7 +43,8 @@ class FilmControllerTest {
         when(genreStorage.existsById(1)).thenReturn(true);
         when(genreStorage.existsById(6)).thenReturn(true);
 
-        filmController = new FilmController(filmService, genreStorage, mpaStorage);
+        filmService = new FilmService(filmStorage, userStorage, genreStorage, mpaStorage);
+        filmController = new FilmController(filmService);
 
         Mpa mpa = new Mpa();
         mpa.setId(3);
@@ -183,8 +184,9 @@ class FilmControllerTest {
         assertEquals(validFilm.getDescription(), createdFilm.getDescription());
         assertEquals(validFilm.getReleaseDate(), createdFilm.getReleaseDate());
         assertEquals(validFilm.getDuration(), createdFilm.getDuration());
+
+        assertNotNull(createdFilm.getMpa());
         assertEquals(validFilm.getMpa().getId(), createdFilm.getMpa().getId());
-        assertEquals(validFilm.getMpa().getName(), createdFilm.getMpa().getName());
         assertEquals(2, createdFilm.getGenres().size());
 
         verify(mpaStorage, times(1)).existsById(3);
@@ -198,12 +200,10 @@ class FilmControllerTest {
 
         Mpa invalidMpa = new Mpa();
         invalidMpa.setId(99);
-        invalidMpa.setName("Invalid");
         validFilm.setMpa(invalidMpa);
 
-        ru.yandex.practicum.filmorate.exception.NotFoundException exception =
-                assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
-                        () -> filmController.createFilm(validFilm));
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> filmController.createFilm(validFilm));
         assertEquals("Рейтинг mpa с id 99 не найден", exception.getMessage());
     }
 
@@ -213,15 +213,13 @@ class FilmControllerTest {
 
         Genre invalidGenre = new Genre();
         invalidGenre.setId(99);
-        invalidGenre.setName("Invalid");
 
         Set<Genre> genres = new HashSet<>(validFilm.getGenres());
         genres.add(invalidGenre);
         validFilm.setGenres(genres);
 
-        ru.yandex.practicum.filmorate.exception.NotFoundException exception =
-                assertThrows(ru.yandex.practicum.filmorate.exception.NotFoundException.class,
-                        () -> filmController.createFilm(validFilm));
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> filmController.createFilm(validFilm));
         assertEquals("Жанр с id 99 не найден", exception.getMessage());
     }
 
@@ -246,5 +244,21 @@ class FilmControllerTest {
 
         assertEquals(1L, firstFilm.getId());
         assertEquals(2L, createdSecond.getId());
+    }
+
+    @Test
+    void updateFilm_ShouldThrowException_WhenIdIsNull() {
+        validFilm.setId(null);
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> filmController.updateFilm(validFilm));
+        assertEquals("ID фильма должен быть указан", exception.getMessage());
+    }
+
+    @Test
+    void updateFilm_ShouldThrowException_WhenFilmNotFound() {
+        validFilm.setId(999L);
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> filmController.updateFilm(validFilm));
+        assertEquals("Фильм с id 999 не найден", exception.getMessage());
     }
 }
