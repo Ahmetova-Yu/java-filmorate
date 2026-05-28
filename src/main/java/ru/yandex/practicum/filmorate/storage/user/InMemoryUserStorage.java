@@ -13,22 +13,14 @@ import java.util.Optional;
 public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> users = new HashMap<>();
-
     private long currentId = 0;
 
     @Override
     public User createUser(User user) {
         user.setId(getNextId());
-
-        if (user.getFriends() == null) {
-            user.setFriends(new java.util.HashMap<>());
-        }
-
         users.put(user.getId(), user);
 
-        log.debug("Пользователь сохранен: id={}",
-                user.getId());
-
+        log.debug("Пользователь сохранен: id={}", user.getId());
         return user;
     }
 
@@ -42,22 +34,18 @@ public class InMemoryUserStorage implements UserStorage {
         existingUser.setBirthday(user.getBirthday());
 
         log.debug("Пользователь обновлен: id={}", user.getId());
-
         return existingUser;
     }
 
     @Override
     public Collection<User> findAllUsers() {
-        log.debug("Получены все пользователи. Всего: {} пользователей",
-                users.size());
-
+        log.debug("Получены все пользователи. Всего: {} пользователей", users.size());
         return users.values();
     }
 
     @Override
     public Optional<User> getUserById(Long id) {
         log.trace("Поиск пользователя по id: {}", id);
-
         return Optional.ofNullable(users.get(id));
     }
 
@@ -68,7 +56,6 @@ public class InMemoryUserStorage implements UserStorage {
             log.debug("Пользователь удален: id={}", id);
             return true;
         }
-
         log.warn("Попытка удалить несуществующего пользователя: id={}", id);
         return false;
     }
